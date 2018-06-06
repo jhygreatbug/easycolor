@@ -1,4 +1,5 @@
 (function () {
+	var decimalPoint = 3;
 	function simpleExtend (o1, o2) {
 		var key;
 		for (key in o2) {
@@ -156,8 +157,8 @@
 		rebeccapurple: "663399"
 	};
 
-	var token = {
-		number: /(?:[-+]?(?:(?:\d*\.\d+)|(?:\d+))(?:e[-+]?\d+)?)/,
+	var sourceToken = {
+		number: /(?:[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?)/,
 		percent: /(?:number%)/,
 		angle: /(?:number(?:deg|grad|rad|turn))/,
 		unit: /(?:number|percent)/,
@@ -177,41 +178,63 @@
 		hex6: /#(hex2)(hex2)(hex2)/,
 		hex8: /#(hex2)(hex2)(hex2)(hex2)/,
 	}
+	var cacheToken = {
+		number: sourceToken.number.source,
+		hex1: sourceToken.hex1.source,
+		hex2: sourceToken.hex2.source
+	};
+	var token = {};
 
 	var replaceTokens = ['number', 'hex1', 'hex2', 'percent', 'angle', 'unit', 'hue'];
-	var finalTokens = ['number', 'hex1', 'hex2'];
+
+	for (key in sourceToken) {
+		token[key] = getReg(key);
+	}
 
 	function replaceReg (regStr, name) {
-		if (finalTokens.indexOf(name) >= 0) {
+		if (name in cacheToken) {
 			return regStr;
 		}
-		return regStr.replace(new RegExp(replaceTokens.join('|'), 'g'), function (match) {
+		var result = regStr.replace(new RegExp(replaceTokens.join('|'), 'g'), function (match) {
+			if (match in cacheToken) {
+				return cacheToken[match];
+			}
 			return replaceReg(token[match].source, match);
 		});
+		cacheToken[name] = result;
+		return result;
 	}
 
 	function getReg (name) {
-		return new RegExp('^' + replaceReg(token[name].source, name) + '$', 'i');
+		return new RegExp('^' + replaceReg(sourceToken[name].source, name) + '$', 'i');
 	}
 
 	function isMatch (val, name) {
-		return getReg(name).exec(val);
+		return token[name].exec(val);
 	}
 
 	function parseRgbNumber (val) {
-		return Math.min(255, Math.max(0, Number(val)));
+		return Math.min(255, Math.max(0, Math.floor(Number(val))));
 	}
 
 	function parsePercent (val) {
-		var num = isMatch(val, 'percent') ? val.slice(0, -1) : val;
-		return Math.min(100, Math.max(0, Number(num)));
+		return Math.min(100, Math.max(0, Number(val.slice(0, -1))));
 	}
 
 	function parseUnit (val) {
-		return isMatch(val, 'percent') ? parsePercent(val) : Number(val);
+		return val[val.length - 1] === '%' ? parsePercent(val) : Number(val);
 	}
 
 	function parseHue (val) {
+		if (val.indexOf('deg') !== -1) {
+			val = val.slice(0, -3);
+		} else if (val.indexOf('grad') !== -1) {
+			val = val.slice(0, -4) * 360 / 400;
+		} else if (val.indexOf('rad') !== -1) {
+			val = val.slice(0, -3) * 360 / 2 / Math.PI;
+		} else if (val.indexOf('turn') !== -1) {
+			val = val.slice(0, -4) * 360;
+		}
 		return Number(val);
 	}
 
@@ -220,16 +243,112 @@
 	}
 
 	function parseAlpha (val) {
-		if (isMatch(val, 'percent')) {
-			return parsePercent(val) / 100;
-		} else {
-			return Math.min(1, Math.max(0, Number(val)));
+		if (val[val.length - 1] === '%') {
+			val = parsePercent(val) / 100;
 		}
+		return Math.min(1, Math.max(0, Number(val)));
 	}
 
 	function toHexString (val) {
 		var s = parseInt(val, 16).toString();
 		return s.length < 2 ? '0' + s : s;
+	}
+
+	function toFixed (val, n) {
+		n = Number('1e' + n);
+		return Math.round(val * n) / n;
+	}
+
+	function rgbToHue(r, g, b) {
+		var max = Math.max(Math.max(r, g), b);
+		var min = Math.min(Math.min(r, g), b);
+		var dist = max - min;
+		if (dist === 0) {
+			return 0;
+		} else {
+			switch (max) {
+				case r:
+					return (g - b) / dist * 60 + (g >= dist ? 0 : 360);
+				case g:
+					return (b - r) / dist * 60 + 120;
+				case b:
+					return (r - g) / dist * 60 + 240;
+			}
+		}
+	}
+
+	function rgbToHsl(r, g, b) {
+		r /= 255;
+		g /= 255;
+		b /= 255;
+		var max = Math.max(Math.max(r, g), b);
+		var min = Math.min(Math.min(r, g), b);
+		var dist = max - min;
+		var sum = max + min;
+		var h, s, l;
+		h = rgbToHue(r, g, b);
+		l = sum / 2;
+		if (sum === 0 || dist === 0) {
+			s = 0;
+		} else if (l <= 0.5) {
+			s = dist / sum;
+		} else {
+			s = dist / (2 - sum);
+		}
+		return { h: h, s: s * 100, l: l * 100 };
+	}
+
+	function rgbToHsv(r, g, b) {
+		r /= 255;
+		g /= 255;
+		b /= 255;
+		var max = Math.max(Math.max(r, g), b);
+		var min = Math.min(Math.min(r, g), b);
+		var dist = max - min;
+		var sum = max + min;
+		var h = rgbToHue(r, g, b);
+		var s = max === 0 ? 0 : 1 - min / max;
+		var v = max;
+		return { h: h, s: s * 100, v: v * 100 };
+	}
+
+	function hueToRgb(m1, m2, h) {
+		if (h < 0) h += 1;
+		if (h > 1) h -= 1;
+		if (h * 6 < 1) return m1 + (m2 - m1) * h * 6;
+		if (h * 2 < 1) return m2;
+		if (h * 3 < 2) return m1 + (m2 - m1) * (2 / 3 - h) * 6;
+		return m1;
+	}
+
+	function hslToRgb(h, s, l) {
+		h /= 360;
+		s /= 100;
+		l /= 100;
+		var m2 = l <= 0.5 ? l * (s + 1) : l + s - l * s;
+		var m1 = l * 2 - m2;
+		var r = hueToRgb(m1, m2, h + 1 / 3) * 255;
+		var g = hueToRgb(m1, m2, h) * 255;
+		var b = hueToRgb(m1, m2, h - 1 / 3) * 255;
+		return { r: r, g: g, b: b };
+	}
+
+	function hsvToRgb(h, s, l) {
+		s /= 100;
+		l /= 100;
+		var hi = Math.abs(h / 60) % 6;
+		var f = h / 60 - hi;
+		var p = v * (1 - s);
+		var q = v * (1 - f * s);
+		var t = v * (1 - (1 - f) * s);
+		switch (hi) {
+			case 0: return { r: v, g: t, b: p };
+			case 1: return { r: q, g: v, b: p };
+			case 2: return { r: p, g: v, b: t };
+			case 3: return { r: p, g: q, b: v };
+			case 4: return { r: t, g: p, b: v };
+			case 5: return { r: v, g: p, b: q };
+		}
 	}
 
 	function Color (color, options) {
@@ -268,10 +387,10 @@
 			}
 		}
 
+		var val = { r: 0, g: 0, b: 0, a: 1 };
+		var type = 'rgb';
+		var percentage = false;
 		if (typeof color === 'object') {
-			var val = { r: 0, g: 0, b: 0 };
-			var type = 'rgb';
-			var percentage = false;
 			if (isMatch(color.r, 'number') && isMatch(color.g, 'number') && isMatch(color.b, 'number')) {
 				type = 'rgb';
 				val = {
@@ -279,12 +398,12 @@
 					g: parseRgbNumber(color.g),
 					b: parseRgbNumber(color.b)
 				};
-				if (val.r <= 1 && val.g <= 1 && val.b <= 1) {
-					val.r *= 100;
-					val.g *= 100;
-					val.b *= 100;
-					percentage = true;
-				}
+				// if (val.r <= 1 && val.g <= 1 && val.b <= 1) {
+				// 	val.r *= 100;
+				// 	val.g *= 100;
+				// 	val.b *= 100;
+				// 	percentage = true;
+				// }
 			} else if (isMatch(color.r, 'percent') && isMatch(color.g, 'percent') && isMatch(color.b, 'percent')) {
 				type = 'rgb';
 				val = {
@@ -300,12 +419,13 @@
 					s: parseUnit(color.s),
 					l: parseUnit(color.l)
 				};
-				if (val.s <= 1 && isMatch(color.s, 'number')) {
-					val.s *= 100;
-				}
-				if (val.l <= 1 && isMatch(color.l, 'number')) {
-					val.l *= 100;
-				}
+				val = hslToRgb(val.h, val.s, val.l);
+				// if (val.s <= 1 && isMatch(color.s, 'number')) {
+				// 	val.s *= 100;
+				// }
+				// if (val.l <= 1 && isMatch(color.l, 'number')) {
+				// 	val.l *= 100;
+				// }
 			} else if (isMatch(color.h, 'hue') && isMatch(color.s, 'unit') && isMatch(color.v, 'unit')) {
 				type = 'hsv';
 				val = {
@@ -313,16 +433,15 @@
 					s: parseUnit(color.s),
 					v: parseUnit(color.v)
 				};
-				if (val.s <= 1 && isMatch(color.s, 'number')) {
-					val.s *= 100;
-				}
-				if (val.v <= 1 && isMatch(color.v, 'number')) {
-					val.v *= 100;
-				}
+				val = hslToRgb(val.h, val.s, val.v);
+				// if (val.s <= 1 && isMatch(color.s, 'number')) {
+				// 	val.s *= 100;
+				// }
+				// if (val.v <= 1 && isMatch(color.v, 'number')) {
+				// 	val.v *= 100;
+				// }
 			}
-			if (isMatch(color.a, 'unit')) {
-				val.a = parseAlpha(color.a);
-			}
+			val.a = isMatch(color.a, 'unit') ? parseAlpha(color.a) : 1;
 		}
 		this._type = type;
 		this._val = val;
@@ -349,25 +468,27 @@
 		toString: function (oType) {
 			var type = oType || this._type;
 			var val = this._val;
-			var percent = this._percentRgb;
+			var percent = this._percentage;
 			if (type === 'rgb') {
 				if (percent) {
 					return val.a === 1 ?
-						'rgb(' + val.r + '%,' + val.g + '%,' + val.b + ')' :
-						'rgba(' + val.r + '%,' + val.g + '%,' + val.b + ',' + val.a + ')';
+						'rgb(' + toFixed(val.r, decimalPoint) + '%,' + toFixed(val.g, decimalPoint) + '%,' + toFixed(val.b, decimalPoint) + '%)' :
+						'rgba(' + toFixed(val.r, decimalPoint) + '%,' + toFixed(val.g, decimalPoint) + '%,' + toFixed(val.b, decimalPoint) + '%,' + toFixed(val.a, decimalPoint) + ')';
 				} else {
 					return val.a === 1 ?
 					'rgb(' + val.r + ',' + val.g + ',' + val.b + ')' :
-					'rgba(' + val.r + ',' + val.g + ',' + val.b + ',' + val.a + ')';
+					'rgba(' + val.r + ',' + val.g + ',' + val.b + ',' + toFixed(val.a, decimalPoint) + ')';
 				}
 			} else if (type === 'hsl') {
+				var hsl = rgbToHsl(val.r, val.g, val.b);
 				return val.a === 1 ?
-					'hsl(' + val.h + ',' + val.s + '%,' + val.l + '%)' :
-					'hsla(' + val.h + ',' + val.s + '%,' + val.l + '%,' + val.a + ')';
+					'hsl(' + toFixed(hsl.h, decimalPoint) + ',' + toFixed(hsl.s, decimalPoint) + '%,' + toFixed(hsl.l, decimalPoint) + '%)' :
+					'hsla(' + toFixed(hsl.h, decimalPoint) + ',' + toFixed(hsl.s, decimalPoint) + '%,' + toFixed(hsl.l, decimalPoint) + '%,' + toFixed(val.a, decimalPoint) + ')';
 			} else if (type === 'hsv') {
+				var hsv = rgbToHsv(val.r, val.g, val.b);
 				return val.a === 1 ?
-					'hsv(' + val.h + ',' + val.s + '%,' + val.v + '%)' :
-					'hsva(' + val.h + ',' + val.s + '%,' + val.v + '%,' + val.a + ')';
+					'hsv(' + toFixed(hsv.h, decimalPoint) + ',' + toFixed(hsv.s, decimalPoint) + '%,' + toFixed(hsv.v, decimalPoint) + '%)' :
+					'hsva(' + toFixed(hsv.h, decimalPoint) + ',' + toFixed(hsv.s, decimalPoint) + '%,' + toFixed(hsv.v, decimalPoint) + '%,' + toFixed(val.a, decimalPoint) + ')';
 			} else if (type === 'hex') {
 				return val.a === 1 ?
 					'#' + toHexString(val.r) + toHexString(val.g) + toHexString(val.b) :
