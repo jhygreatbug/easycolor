@@ -11,6 +11,7 @@
 	var keywords = {
 		black: '000000',
 		silver: 'c0c0c0',
+		grey: '808080',
 		gray: '808080',
 		white: 'ffffff',
 		maroon: '800000',
@@ -31,8 +32,8 @@
 		aquamarine: '7fffd4',
 		azure: 'f0ffff',
 		beige: 'f5f5dc',
-		bisque: 'ffe4c4',
 		blanchedalmond: 'ffe4c4',
+		bisque: 'ffe4c4',
 		blueviolet: '8a2be2',
 		brown: 'a52a2a',
 		burlywood: 'deb887',
@@ -46,9 +47,9 @@
 		darkblue: '00008b',
 		darkcyan: '008b8b',
 		darkgoldenrod: 'b8860b',
+		darkgrey: 'a9a9a9',
 		darkgray: 'a9a9a9',
 		darkgreen: '006400',
-		darkgrey: 'a9a9a9',
 		darkkhaki: 'bdb76b',
 		darkmagenta: '8b008b',
 		darkolivegreen: '556b2f',
@@ -58,14 +59,14 @@
 		darksalmon: 'e9967a',
 		darkseagreen: '8fbc8f',
 		darkslateblue: '483d8b',
-		darkslategray: '2f4f4f',
 		darkslategrey: '2f4f4f',
+		darkslategray: '2f4f4f',
 		darkturquoise: '00ced1',
 		darkviolet: '9400d3',
 		deeppink: 'ff1493',
 		deepskyblue: '00bfff',
-		dimgray: '696969',
 		dimgrey: '696969',
+		dimgray: '696969',
 		dodgerblue: '1e90ff',
 		firebrick: 'b22222',
 		floralwhite: 'fffaf0',
@@ -75,7 +76,6 @@
 		gold: 'ffd700',
 		goldenrod: 'daa520',
 		greenyellow: 'adff2f',
-		grey: '808080',
 		honeydew: 'f0fff0',
 		hotpink: 'ff69b4',
 		indianred: 'cd5c5c',
@@ -90,15 +90,15 @@
 		lightcoral: 'f08080',
 		lightcyan: 'e0ffff',
 		lightgoldenrodyellow: 'fafad2',
+		lightgrey: 'd3d3d3',
 		lightgray: 'd3d3d3',
 		lightgreen: '90ee90',
-		lightgrey: 'd3d3d3',
 		lightpink: 'ffb6c1',
 		lightsalmon: 'ffa07a',
 		lightseagreen: '20b2aa',
 		lightskyblue: '87cefa',
-		lightslategray: '778899',
 		lightslategrey: '778899',
+		lightslategray: '778899',
 		lightsteelblue: 'b0c4de',
 		lightyellow: 'ffffe0',
 		limegreen: '32cd32',
@@ -141,8 +141,8 @@
 		sienna: 'a0522d',
 		skyblue: '87ceeb',
 		slateblue: '6a5acd',
-		slategray: '708090',
 		slategrey: '708090',
+		slategray: '708090',
 		snow: 'fffafa',
 		springgreen: '00ff7f',
 		steelblue: '4682b4',
@@ -172,12 +172,12 @@
 		hue: /(?:number|angle)/,
 		rgb: /rgb\(\s*(number)[,\s]+(number)[,\s]+(number)\s*\)/,
 		rgbpercent: /rgb\(\s*(percent)[,\s]+(percent)[,\s]+(percent)\s*\)/,
-		rgba: /rgba\(\s*(number)[,\s]+(number)[,\s]+(number)[,\s]+(unit)\)/,
-		rgbapercent: /rgba\(\s*(percent)[,\s]+(percent)[,\s]+(percent)[,\s]+(unit)\)/,
+		rgba: /rgba\(\s*(number)[,\s]+(number)[,\s]+(number)(?:[,\s]*\/[,\s]*|[,\s]+)(unit)\)/,
+		rgbapercent: /rgba\(\s*(percent)[,\s]+(percent)[,\s]+(percent)(?:[,\s]*\/[,\s]*|[,\s]+)(unit)\)/,
 		hsl: /hsl\(\s*(hue)[,\s]+(percent)[,\s]+(percent)\s*\)/,
-		hsla: /hsla\(\s*(hue)[,\s]+(percent)[,\s]+(percent)[,\s]+(unit)\s*\)/,
+		hsla: /hsla\(\s*(hue)[,\s]+(percent)[,\s]+(percent)(?:[,\s]*\/[,\s]*|[,\s]+)(unit)\s*\)/,
 		hsv: /hsv\(\s*(hue)[,\s]+(percent)[,\s]+(percent)\s*\)/,
-		hsva: /hsva\(\s*(hue)[,\s]+(percent)[,\s]+(percent)[,\s]+(unit)\s*\)/,
+		hsva: /hsva\(\s*(hue)[,\s]+(percent)[,\s]+(percent)(?:[,\s]*\/[,\s]*|[,\s]+)(unit)\s*\)/,
 		hex1: /[0-9a-f]/,
 		hex2: /[0-9a-f]{2}/,
 		hex3: /#(hex1)(hex1)(hex1)/,
@@ -234,14 +234,16 @@
 	}
 
 	function parseHue (val) {
-		if (val.indexOf('deg') !== -1) {
-			val = val.slice(0, -3);
-		} else if (val.indexOf('grad') !== -1) {
-			val = val.slice(0, -4) * 360 / 400;
-		} else if (val.indexOf('rad') !== -1) {
-			val = val.slice(0, -3) * 360 / 2 / Math.PI;
-		} else if (val.indexOf('turn') !== -1) {
-			val = val.slice(0, -4) * 360;
+		if (typeof val === 'string') {
+			if (val.indexOf('deg') !== -1) {
+				val = val.slice(0, -3);
+			} else if (val.indexOf('grad') !== -1) {
+				val = val.slice(0, -4) * 360 / 400;
+			} else if (val.indexOf('rad') !== -1) {
+				val = val.slice(0, -3) * 360 / 2 / Math.PI;
+			} else if (val.indexOf('turn') !== -1) {
+				val = val.slice(0, -4) * 360;
+			}
 		}
 		return Number(val);
 	}
@@ -265,6 +267,10 @@
 	function toFixed (val, n) {
 		n = Number('1e' + n);
 		return Math.round(val * n) / n;
+	}
+
+	function rgbToPercent (val, n) {
+		return toFixed(val * 100 / 255, n);
 	}
 
 	function rgbToHue(r, g, b) {
@@ -382,12 +388,12 @@
 		if (typeof color === 'string') {
 			var match;
 			if (color === 'transparent') {
-				type = 'keyword';
+				type = 'transparent';
 				color = { r: 0, g: 0, b: 0, a: 0 };
 			} else if (color in keywords) {
 				type = 'keyword';
 				color = keywords[color];
-				color = { r: color.slice(0, 1), g: color.slice(2, 3), b: color.slice(4, 5) };
+				color = { r: color.slice(0, 2), g: color.slice(2, 4), b: color.slice(4, 6) };
 			} else if (match = isMatch(color, 'rgb')) {
 				type = 'rgb';
 				color = { r: match[1], g: match[2], b: match[3] };
@@ -442,7 +448,7 @@
 			}
 		}
 
-		if (type === 'hex') {
+		if (type === 'hex' || type === 'keyword') {
 			val = {
 				r: parseHex(color.r),
 				g: parseHex(color.g),
@@ -454,9 +460,9 @@
 		} else if (type === 'rgb') {
 			if (percentage === true) {
 				val = {
-					r: parsePercent(color.r),
-					g: parsePercent(color.g),
-					b: parsePercent(color.b)
+					r: parsePercent(color.r) / 100 * 255,
+					g: parsePercent(color.g) / 100 * 255,
+					b: parsePercent(color.b) / 100 * 255
 				};
 			} else {
 				val = {
@@ -491,21 +497,21 @@
 		this._percentage = percentage;
 	}
 
-	Color.random = function () {
+	// Color.random = function () {
 
-	};
+	// };
 
-	Color.interpolation = function () {
+	// Color.interpolation = function () {
 
-	};
+	// };
 
-	Color.interpolation2d = function () {
+	// Color.interpolation2d = function () {
 
-	};
+	// };
 
-	Color.mix = function () {
+	// Color.mix = function () {
 
-	}
+	// }
 
 	simpleExtend(Color.prototype, {
 		toString: function (oType) {
@@ -514,16 +520,19 @@
 			var percent = this._percentage;
 			if (type === 'keyword') {
 				var hex = toHexString(val.r) + toHexString(val.g) + toHexString(val.b);
-				if (val !== 1 || !(hex in hexKeywords)) {
+				if (val.a !== 1 || !(hex in hexKeywords)) {
 					type = 'hex';
+				} else {
+					return  hexKeywords[hex];
 				}
-				return  hexKeywords[hex];
 			}
-			if (type === 'rgb') {
+			if (type === 'transparent') {
+				return 'transparent';
+			} else if (type === 'rgb') {
 				if (percent) {
 					return val.a === 1 ?
-						'rgb(' + toFixed(val.r, decimalPoint) + '%,' + toFixed(val.g, decimalPoint) + '%,' + toFixed(val.b, decimalPoint) + '%)' :
-						'rgba(' + toFixed(val.r, decimalPoint) + '%,' + toFixed(val.g, decimalPoint) + '%,' + toFixed(val.b, decimalPoint) + '%,' + toFixed(val.a, decimalPoint) + ')';
+						'rgb(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%)' :
+						'rgba(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%,' + toFixed(val.a, decimalPoint) + ')';
 				} else {
 					return val.a === 1 ?
 					'rgb(' + Math.round(val.r) + ',' + Math.round(val.g) + ',' + Math.round(val.b) + ')' :
@@ -546,75 +555,75 @@
 			}
 		},
 
-		red: function () {
+		// red: function () {
 
-		},
-		setRed: function () {
+		// },
+		// setRed: function () {
 
-		},
-		green: function () {
+		// },
+		// green: function () {
 
-		},
-		setGreen: function () {
+		// },
+		// setGreen: function () {
 
-		},
-		blue: function () {
+		// },
+		// blue: function () {
 
-		},
-		setBlue: function () {
+		// },
+		// setBlue: function () {
 
-		},
-		hue: function () {
+		// },
+		// hue: function () {
 
-		},
-		setHue: function () {
+		// },
+		// setHue: function () {
 
-		},
-		satarate: function () {
+		// },
+		// satarate: function () {
 
-		},
-		setSataration: function () {
+		// },
+		// setSataration: function () {
 
-		},
-		light: function () {
+		// },
+		// light: function () {
 
-		},
-		setLightness: function () {
+		// },
+		// setLightness: function () {
 
-		},
-		bright: function () {
+		// },
+		// bright: function () {
 
-		},
-		setBrightness: function () {
+		// },
+		// setBrightness: function () {
 
-		},
-		alpha: function () {
+		// },
+		// alpha: function () {
 
-		},
-		setAlpha: function () {
+		// },
+		// setAlpha: function () {
 
-		},
+		// },
 
-		grayed: function () {
+		// grayed: function () {
 
-		},
-		inverting: function () {
+		// },
+		// inverting: function () {
 
-		},
+		// },
 
-		interpolation: function () {
+		// interpolation: function () {
 
-		},
-		interpolation2d: function () {
+		// },
+		// interpolation2d: function () {
 
-		},
-		mix: function () {
+		// },
+		// mix: function () {
 
-		},
+		// },
 
-		clone: function () {
+		// clone: function () {
 
-		},
+		// },
 	});
 
 	if (typeof module !== 'undefined' && module.exports) {
