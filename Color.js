@@ -7,6 +7,24 @@
 			o1[key] = o2[key];
 		}
 	}
+	function isArray (o) {
+		return Object.prototype.toString.apply(o) === '[object Array]';
+	}
+	function addVector(v1, v2) {
+		return v1.map((item, index) => v1[index] + v2[index]);
+	}
+
+	function subtractVector(v1, v2) {
+		return v1.map((item, index) => v1[index] - v2[index]);
+	}
+
+	function multiplyVector(v1, num) {
+		return v1.map(item => item * num);
+	}
+
+	function divisionVector(v1, num) {
+		return v1.map(item => item / num);
+	}
 
 	var keywords = {
 		black: '000000',
@@ -450,6 +468,22 @@
 			}
 		}
 
+		if (isArray(color) && color.length >= 3) {
+			var arr = color;
+			if (type === 'hsl') {
+				color = { h: arr[0], s: arr[1], l: arr[2] };
+			} else if (type === 'hsv') {
+				color = { h: arr[0], s: arr[1], v: arr[2] };
+			} else {
+				type = 'rgb';
+				opt.type = 'hex';
+				color = { r: arr[0], g: arr[1], b: arr[2] };
+			}
+			if (arr.length > 3) {
+				color.a = arr[3];
+			}
+		}
+
 		if (type === 'transparent') {
 			val = color;
 		} else if (type === 'hex' || type === 'keyword') {
@@ -476,19 +510,9 @@
 				};
 			}
 		} else if (type === 'hsl') {
-			val = {
-				h: parseHue(color.h),
-				s: parseUnit(color.s),
-				l: parseUnit(color.l)
-			};
-			val = hslToRgb(val.h, val.s, val.l);
+			val = hslToRgb(parseHue(color.h), parseUnit(color.s), parseUnit(color.l));
 		} else if (type === 'hsv') {
-			val = {
-				h: parseHue(color.h),
-				s: parseUnit(color.s),
-				v: parseUnit(color.v)
-			};
-			val = hsvToRgb(val.h, val.s, val.v);
+			val = hsvToRgb(parseHue(color.h), parseUnit(color.s), parseUnit(color.v));
 		}
 		if (typeof val === 'undefined') {
 			val = { r: 0, g: 0, b: 0, a: 1 };
@@ -501,21 +525,64 @@
 		this._percentage = opt.percentage || percentage;
 	}
 
-	// Color.random = function () {
+	Color.random = function () {
+		return Color({
+			r: Math.floor(Math.random() * 256),
+			g: Math.floor(Math.random() * 256),
+			b: Math.floor(Math.random() * 256),
+		});
+	};
 
-	// };
+	Color.interpolation = function (start, end, count) {
+		if (!(start instanceof Color) ||
+			!(end instanceof Color)
+		) {
+			throw new TypeError();
+		}
+		if (count === 0) return [];
+		var colors = [start];
+		if (count === 0) return colors;
+		var step = divisionVector(subtractVector(end.getValue(), start.getValue()), count - 1);
+		for (let i = 1; i <= count - 2; i++) {
+			colors.push(Color(addVector(colors[colors.length - 1].getValue(), step)));
+		}
+		colors.push(end);
+		return colors;
+	};
 
-	// Color.interpolation = function () {
+	Color.interpolation2d = function (tl, tr, bl, br, width, height) {
+		if (!(tl instanceof Color) ||
+			!(tr instanceof Color) ||
+			!(bl instanceof Color) ||
+			!(br instanceof Color)
+		) {
+			throw new TypeError();
+		}
+		if (width === 0 || height === 0) return [];
+		if (height === 1) {
+			return [Color.interpolation(tl, br, width)];
+		}
+		var lineHeads = Color.interpolation(tl, bl, height);
+		var lineTails = Color.interpolation(tr, br, height);
+		return lineHeads.map(function (item, index) {
+			return Color.interpolation(lineHeads[index], lineTails[index], width);
+		});
+	};
 
-	// };
-
-	// Color.interpolation2d = function () {
-
-	// };
-
-	// Color.mix = function () {
-
-	// }
+	Color.mix = function (a, b) {
+		var a1 = a.a, a2 = b.a;
+		var color1 = a.getValue();
+		var color2 = b.getValue();
+		var alpha = a1 + a2 - a1 * a2;
+		var rgb = divisionVector(addVector(multiplyVector(color1, a1), multiplyVector(color2, a2 * (1 - a1))), alpha);
+		var val = {
+			r: rgb[0],
+			g: rgb[1],
+			b: rgb[2],
+			a: alpha
+		}
+		return Color(val);
+	};
 
 	[
 		{ name: 'red', key: 'r' },
@@ -670,22 +737,29 @@
 			}
 		},
 
-		// grayed: function () {
+		getValue: function () {
+			var val = this._val;
+			return [val.r, val.g, val.b, val.a];
+		},
 
-		// },
+		grayed: function () {
+			var val = this._val;
+			var gray = val.r * 0.3 + val.g * 0.58 + val.b * 0.11;
+			return Color({ r: gray, g: gray, b: gray, a: val.a });
+		},
 		// inverting: function () {
 
 		// },
 
-		// interpolation: function () {
-
-		// },
-		// interpolation2d: function () {
-
-		// },
-		// mix: function () {
-
-		// },
+		interpolation: function (end, count) {
+			return Color.interpolation(this, end, count);
+		},
+		interpolation2d: function (tr, bl, br, width, height) {
+			return Color.interpolation2d(this, tl, tr, bl, br, width, height);
+		},
+		mix: function (b) {
+			return Color.mix(this, b);
+		},
 
 		clone: function () {
 			return Color(this._val, {
