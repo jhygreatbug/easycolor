@@ -293,4 +293,13 @@ describe('Modify', function() {
 			});
 		});
 	});
+	it('Alpha', function() {
+		var color = Color('#000');
+		color.alpha = .5;
+		color.a.should.equal(.5, 'Alpha和a对应同一数据');
+		color.alpha = '30%';
+		color.a.should.equal(.3);
+		color.alpha = 'wagarg';
+		color.a.should.equal(1);
+	});
 });

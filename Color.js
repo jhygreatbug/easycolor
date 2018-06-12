@@ -450,7 +450,9 @@
 			}
 		}
 
-		if (type === 'hex' || type === 'keyword') {
+		if (type === 'transparent') {
+			val = color;
+		} else if (type === 'hex' || type === 'keyword') {
 			val = {
 				r: parseHex(color.r),
 				g: parseHex(color.g),
@@ -584,22 +586,19 @@
 		});
 	});
 
-	[
-		{ name: 'bright', key: 'v' },
-		{ name: 'v', key: 'v' }
-	].forEach(function (item) {
-		Object.defineProperty(Color.prototype, item.name, {
+	['bright', 'v'].forEach(function (item) {
+		Object.defineProperty(Color.prototype, item, {
 			get: function () {
 				var val = this._val;
-				return toFixed(rgbToHsv(val.r, val.g, val.b)[item.key], decimalPoint);
+				return toFixed(rgbToHsv(val.r, val.g, val.b).v, decimalPoint);
 			},
 			set: function (val) {
 				var old = this._val;
 				var hsv = rgbToHsv(old.r, old.g, old.b);
 				if (isMatch(val, 'unit')) {
-					hsv[item.key] = parseUnit(val);
+					hsv.v = parseUnit(val);
 				} else {
-					hsv[item.key] = 0;
+					hsv.v = 0;
 				}
 				this._val = hsvToRgb(hsv.h, hsv.s, hsv.v);
 				this._val.a = old.a;
@@ -607,19 +606,21 @@
 		});
 	});
 
-	Object.defineProperty(Color.prototype, 'a', {
-		get: function () {
-			return toFixed(this._val.a, decimalPoint);
-		},
-		set: function (val) {
-			if (isMatch(val, 'number')) {
-				this._val.a = parseRgbNumber(val);
-			} else if (isMatch(val, 'percent')) {
-				this._val.a = parsePercent(val);
-			} else {
-				this._val.a = 0;
-			}
-		},
+	['alpha', 'a'].forEach(function (item) {
+		Object.defineProperty(Color.prototype, item, {
+			get: function () {
+				return toFixed(this._val.a, decimalPoint);
+			},
+			set: function (val) {
+				if (isMatch(val, 'number')) {
+					this._val.a = parseRgbNumber(val);
+				} else if (isMatch(val, 'percent')) {
+					this._val.a = parsePercent(val) / 100;
+				} else {
+					this._val.a = 1;
+				}
+			},
+		});
 	});
 
 	simpleExtend(Color.prototype, {
@@ -627,6 +628,13 @@
 			var type = oType || this._type;
 			var val = this._val;
 			var percent = this._percentage;
+			if (type === 'transparent') {
+				if (val.a === 0) {
+					return 'transparent';
+				} else {
+					type = 'hex';
+				}
+			}
 			if (type === 'keyword') {
 				var hex = toHexString(val.r) + toHexString(val.g) + toHexString(val.b);
 				if (val.a !== 1 || !(hex in hexKeywords)) {
@@ -635,9 +643,7 @@
 					return  hexKeywords[hex];
 				}
 			}
-			if (type === 'transparent') {
-				return 'transparent';
-			} else if (type === 'rgb') {
+			if (type === 'rgb') {
 				if (percent) {
 					return val.a === 1 ?
 						'rgb(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%)' :
