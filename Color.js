@@ -176,8 +176,8 @@
 		rgbapercent: /rgba\(\s*(percent)[,\s]+(percent)[,\s]+(percent)(?:[,\s]*\/[,\s]*|[,\s]+)(unit)\)/,
 		hsl: /hsl\(\s*(hue)[,\s]+(percent)[,\s]+(percent)\s*\)/,
 		hsla: /hsla\(\s*(hue)[,\s]+(percent)[,\s]+(percent)(?:[,\s]*\/[,\s]*|[,\s]+)(unit)\s*\)/,
-		hsv: /hsv\(\s*(hue)[,\s]+(percent)[,\s]+(percent)\s*\)/,
-		hsva: /hsva\(\s*(hue)[,\s]+(percent)[,\s]+(percent)(?:[,\s]*\/[,\s]*|[,\s]+)(unit)\s*\)/,
+		hsv: /hs(?:v|b)\(\s*(hue)[,\s]+(percent)[,\s]+(percent)\s*\)/,
+		hsva: /hs(?:v|b)a\(\s*(hue)[,\s]+(percent)[,\s]+(percent)(?:[,\s]*\/[,\s]*|[,\s]+)(unit)\s*\)/,
 		hex1: /[0-9a-f]/,
 		hex2: /[0-9a-f]{2}/,
 		hex3: /#(hex1)(hex1)(hex1)/,
@@ -282,7 +282,7 @@
 		} else {
 			switch (max) {
 				case r:
-					return (g - b) / dist * 60 + (g >= dist ? 0 : 360);
+					return (g - b) / dist * 60 + (g >= b ? 0 : 360);
 				case g:
 					return (b - r) / dist * 60 + 120;
 				case b:
@@ -381,7 +381,9 @@
 			return new Color(color, options);
 		}
 
-		var percentage = false;
+		var opt = options || {};
+
+		var percentage = opt.percentage === true;
 		var val;
 		var type;
 
@@ -493,8 +495,8 @@
 		}
 
 		this._val = val;
-		this._type = type || 'hex';
-		this._percentage = percentage;
+		this._type = opt.type || type || 'hex';
+		this._percentage = opt.percentage || percentage;
 	}
 
 	// Color.random = function () {
@@ -512,6 +514,113 @@
 	// Color.mix = function () {
 
 	// }
+
+	[
+		{ name: 'red', key: 'r' },
+		{ name: 'r', key: 'r' },
+		{ name: 'green', key: 'g' },
+		{ name: 'g', key: 'g' },
+		{ name: 'blue', key: 'b' },
+		{ name: 'b', key: 'b' }
+	].forEach(function (item) {
+		Object.defineProperty(Color.prototype, item.name, {
+			get: function () {
+				return Math.round(this._val[item.key]);
+			},
+			set: function (val) {
+				if (isMatch(val, 'number')) {
+					this._val[item.key] = parseRgbNumber(val);
+				} else if (isMatch(val, 'percent')) {
+					this._val[item.key] = parsePercent(val) / 100 * 255;
+				} else {
+					this._val[item.key] = 0;
+				}
+			},
+		});
+	});
+
+	['hue', 'h'].forEach(function (item) {
+		Object.defineProperty(Color.prototype, item, {
+			get: function () {
+				var val = this._val;
+				return toFixed(rgbToHue(val.r, val.g, val.b), decimalPoint);
+			},
+			set: function (val) {
+				var old = this._val;
+				var hsl = rgbToHsl(old.r, old.g, old.b);
+				if (isMatch(val, 'hue')) {
+					hsl.h = parseHue(val);
+				} else {
+					hsl.h = 0;
+				}
+				this._val = hslToRgb(hsl.h, hsl.s, hsl.l);
+				this._val.a = old.a;
+			},
+		});
+	});
+
+	[
+		{ name: 'satarate', key: 's' },
+		{ name: 's', key: 's' },
+		{ name: 'light', key: 'l' },
+		{ name: 'l', key: 'l' }
+	].forEach(function (item) {
+		Object.defineProperty(Color.prototype, item.name, {
+			get: function () {
+				var val = this._val;
+				return toFixed(rgbToHsl(val.r, val.g, val.b)[item.key], decimalPoint);
+			},
+			set: function (val) {
+				var old = this._val;
+				var hsl = rgbToHsl(old.r, old.g, old.b);
+				if (isMatch(val, 'unit')) {
+					hsl[item.key] = parseUnit(val);
+				} else {
+					hsl[item.key] = 0;
+				}
+				this._val = hslToRgb(hsl.h, hsl.s, hsl.l);
+				this._val.a = old.a;
+			},
+		});
+	});
+
+	[
+		{ name: 'bright', key: 'v' },
+		{ name: 'v', key: 'v' }
+	].forEach(function (item) {
+		Object.defineProperty(Color.prototype, item.name, {
+			get: function () {
+				var val = this._val;
+				return toFixed(rgbToHsv(val.r, val.g, val.b)[item.key], decimalPoint);
+			},
+			set: function (val) {
+				var old = this._val;
+				var hsv = rgbToHsv(old.r, old.g, old.b);
+				if (isMatch(val, 'unit')) {
+					hsv[item.key] = parseUnit(val);
+				} else {
+					hsv[item.key] = 0;
+				}
+				this._val = hsvToRgb(hsv.h, hsv.s, hsv.v);
+				this._val.a = old.a;
+			},
+		});
+	});
+
+	Object.defineProperty(Color.prototype, 'a', {
+		get: function () {
+			return toFixed(this._val.a, decimalPoint);
+		},
+		set: function (val) {
+			if (isMatch(val, 'number')) {
+				this._val.a = parseRgbNumber(val);
+			} else if (isMatch(val, 'percent')) {
+				this._val.a = parsePercent(val);
+			} else {
+				this._val.a = 0;
+			}
+		},
+	});
 
 	simpleExtend(Color.prototype, {
 		toString: function (oType) {
@@ -532,77 +641,28 @@
 				if (percent) {
 					return val.a === 1 ?
 						'rgb(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%)' :
-						'rgba(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%,' + toFixed(val.a, decimalPoint) + ')';
+						'rgba(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%,' + this.a + ')';
 				} else {
 					return val.a === 1 ?
-					'rgb(' + Math.round(val.r) + ',' + Math.round(val.g) + ',' + Math.round(val.b) + ')' :
-					'rgba(' + Math.round(val.r) + ',' + Math.round(val.g) + ',' + Math.round(val.b) + ',' + toFixed(val.a, decimalPoint) + ')';
+					'rgb(' + this.r + ',' + this.g + ',' + this.b + ')' :
+					'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a + ')';
 				}
 			} else if (type === 'hsl') {
 				var hsl = rgbToHsl(val.r, val.g, val.b);
 				return val.a === 1 ?
 					'hsl(' + toFixed(hsl.h, decimalPoint) + ',' + toFixed(hsl.s, decimalPoint) + '%,' + toFixed(hsl.l, decimalPoint) + '%)' :
-					'hsla(' + toFixed(hsl.h, decimalPoint) + ',' + toFixed(hsl.s, decimalPoint) + '%,' + toFixed(hsl.l, decimalPoint) + '%,' + toFixed(val.a, decimalPoint) + ')';
+					'hsla(' + toFixed(hsl.h, decimalPoint) + ',' + toFixed(hsl.s, decimalPoint) + '%,' + toFixed(hsl.l, decimalPoint) + '%,' + this.a + ')';
 			} else if (type === 'hsv') {
 				var hsv = rgbToHsv(val.r, val.g, val.b);
 				return val.a === 1 ?
 					'hsv(' + toFixed(hsv.h, decimalPoint) + ',' + toFixed(hsv.s, decimalPoint) + '%,' + toFixed(hsv.v, decimalPoint) + '%)' :
-					'hsva(' + toFixed(hsv.h, decimalPoint) + ',' + toFixed(hsv.s, decimalPoint) + '%,' + toFixed(hsv.v, decimalPoint) + '%,' + toFixed(val.a, decimalPoint) + ')';
+					'hsva(' + toFixed(hsv.h, decimalPoint) + ',' + toFixed(hsv.s, decimalPoint) + '%,' + toFixed(hsv.v, decimalPoint) + '%,' + this.a + ')';
 			} else if (type === 'hex') {
 				return val.a === 1 ?
 					'#' + toHexString(val.r) + toHexString(val.g) + toHexString(val.b) :
 					'#' + toHexString(val.r) + toHexString(val.g) + toHexString(val.b) + toHexString(val.a * 255);
 			}
 		},
-
-		// red: function () {
-
-		// },
-		// setRed: function () {
-
-		// },
-		// green: function () {
-
-		// },
-		// setGreen: function () {
-
-		// },
-		// blue: function () {
-
-		// },
-		// setBlue: function () {
-
-		// },
-		// hue: function () {
-
-		// },
-		// setHue: function () {
-
-		// },
-		// satarate: function () {
-
-		// },
-		// setSataration: function () {
-
-		// },
-		// light: function () {
-
-		// },
-		// setLightness: function () {
-
-		// },
-		// bright: function () {
-
-		// },
-		// setBrightness: function () {
-
-		// },
-		// alpha: function () {
-
-		// },
-		// setAlpha: function () {
-
-		// },
 
 		// grayed: function () {
 
@@ -621,9 +681,12 @@
 
 		// },
 
-		// clone: function () {
-
-		// },
+		clone: function () {
+			return Color(this._val, {
+				type: this._type,
+				percentage: this._percentage
+			});
+		},
 	});
 
 	if (typeof module !== 'undefined' && module.exports) {

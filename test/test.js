@@ -2,8 +2,11 @@ var chai = require('chai');
 var Color = require('../Color');
 var should = chai.should();
 describe('Input', function() {
+	it('Color instance', function() {
+		Color(Color({ r: 100, g: 100, b: 100, a: .5 })).toString().should.equal('rgba(100,100,100,0.5)');
+	});
 	it('Parse object', function() {
-		Color({ r: 100, g: 100, b: 100 }).toString().should.equal('rgb(100,100,100)');
+		Color({ r: 100, g: 100, b: 100, a: .5 }).toString().should.equal('rgba(100,100,100,0.5)');
 		Color({ r: '100', g: '100', b: '100' }).toString().should.equal('rgb(100,100,100)');
 		Color({ r: '50%', g: '0%', b: '100%' }).toString().should.equal('rgb(50%,0%,100%)');
 		Color({ h: 100, s: 50, l: 50 }).toString().should.equal('hsl(100,50%,50%)');
@@ -14,26 +17,26 @@ describe('Input', function() {
 		it('CSS Number and CSS Percent ', function() {
 			Color({ r: '100', g: '200', b: '133' }).toString().should.equal('rgb(100,200,133)');
 			Color({ r: '1e1', g: '100e-1', b: '1e+1' }).toString().should.equal('rgb(10,10,10)', '科学计数法');
-			Color({ h: '-100', s: 50, l: 50 }).toString().should.equal('hsl(260,50%,50%)', '带正号');
-			Color({ h: '+100', s: 50, l: 50 }).toString().should.equal('hsl(100,50%,50%)', '带负号');
+			Color({ h: '-100', s: 50, l: 50 }).h.should.equal(260, '带正号');
+			Color({ h: '+100', s: 50, l: 50 }).h.should.equal(100, '带负号');
 
 			Color({ r: '50.5%', g: '.5%', b: '0.5%' }).toString().should.equal('rgb(50.5%,0.5%,0.5%)', '小数');
 			Color({ r: '50.5%', g: '-.5%', b: '+.5%' }).toString().should.equal('rgb(50.5%,0%,0.5%)', '带正负号的小数');
 		});
 		it('Hue', function() {
-			Color({ h: '100', s: 50, l: 50}).toString().should.equal('hsl(100,50%,50%)');
-			Color({ h: '100.5', s: 50, l: 50}).toString().should.equal('hsl(100.5,50%,50%)', '小数');
-			Color({ h: '100deg', s: 50, l: 50}).toString().should.equal('hsl(100,50%,50%)', 'deg单位');
-			Color({ h: '100grad', s: 50, l: 50}).toString().should.equal('hsl(90,50%,50%)', 'grad单位');
-			Color({ h: '2rad', s: 50, l: 50}).toString().should.equal('hsl(114.592,50%,50%)', 'rad单位');
-			Color({ h: '0.5turn', s: 50, l: 50}).toString().should.equal('hsl(180,50%,50%)', 'turn单位');
+			Color({ h: '100', s: 50, l: 50 }).h.should.equal(100);
+			Color({ h: '100.5', s: 50, l: 50 }).h.should.equal(100.5, '小数');
+			Color({ h: '100deg', s: 50, l: 50 }).h.should.equal(100, 'deg单位');
+			Color({ h: '100grad', s: 50, l: 50 }).h.should.equal(90, 'grad单位');
+			Color({ h: '2rad', s: 50, l: 50 }).h.should.equal(114.592, 'rad单位');
+			Color({ h: '0.5turn', s: 50, l: 50 }).h.should.equal(180, 'turn单位');
 		});
 		it('Alpha', function() {
-			Color({ r: 100, g: 100, b: 100, a: '0.5' }).toString().should.equal('rgba(100,100,100,0.5)');
-			Color({ r: 100, g: 100, b: 100, a: '-0.5' }).toString().should.equal('rgba(100,100,100,0)', '小于0置为0');
-			Color({ r: 100, g: 100, b: 100, a: '1.5' }).toString().should.equal('rgb(100,100,100)', '大于1置为1');
-			Color({ r: 100, g: 100, b: 100, a: '50%' }).toString().should.equal('rgba(100,100,100,0.5)', '支持百分比');
-			Color({ r: 100, g: 100, b: 100, a: 'awgwef' }).toString().should.equal('rgb(100,100,100)', '非数字');
+			Color({ r: 100, g: 100, b: 100, a: '0.5' }).a.should.equal(0.5);
+			Color({ r: 100, g: 100, b: 100, a: '-0.5' }).a.should.equal(0, '小于0置为0');
+			Color({ r: 100, g: 100, b: 100, a: '1.5' }).a.should.equal(1, '大于1置为1');
+			Color({ r: 100, g: 100, b: 100, a: '50%' }).a.should.equal(0.5, '支持百分比');
+			Color({ r: 100, g: 100, b: 100, a: 'awgwef' }).a.should.equal(1, '非数字');
 		});
 		it('RGB & RGBa', function() {
 			Color('rgb(100,200,133)').toString().should.equal('rgb(100,200,133)');
@@ -71,10 +74,12 @@ describe('Input', function() {
 		});
 		it('HSV & HSVa', function() {
 			Color('hsv(100,50%,50%)').toString().should.equal('hsv(100,50%,50%)');
+			Color('hsb(100,50%,50%)').toString().should.equal('hsv(100,50%,50%)');
 			Color('hsv( 100	, 50%,50%	)').toString().should.equal('hsv(100,50%,50%)', '多余空白符');
 			Color('hsv( 100	50% 50%	)').toString().should.equal('hsv(100,50%,50%)', '支持空白符分隔');
 
 			Color('hsva(100,50%,50%,.5)').toString().should.equal('hsva(100,50%,50%,0.5)');
+			Color('hsba(100,50%,50%,.5)').toString().should.equal('hsva(100,50%,50%,0.5)');
 			Color('hsva(100,50%,50% , .5)').toString().should.equal('hsva(100,50%,50%,0.5)');
 			Color('hsva(100 50% 50%  .5)').toString().should.equal('hsva(100,50%,50%,0.5)');
 			Color('hsva(100 50% 50%/.5)').toString().should.equal('hsva(100,50%,50%,0.5)');
@@ -243,6 +248,49 @@ describe('Input', function() {
 			Color('whitesmoke').toString().should.equal('whitesmoke');
 			Color('yellowgreen').toString().should.equal('yellowgreen');
 			Color('rebeccapurple').toString().should.equal('rebeccapurple');
+		});
+	});
+});
+
+describe('Modify', function() {
+	var modify = [{
+		describe: 'RGB',
+		it: [
+			{ name: 'Red', longKey: 'red', shortKey: 'r' },
+			{ name: 'Green', longKey: 'green', shortKey: 'g' },
+			{ name: 'Blue', longKey: 'blue', shortKey: 'b' }
+		],
+		case: [[100, 100], ['20%', 51], ['agr', 0]]
+	}, {
+		describe: 'Hue',
+		it: [
+			{ name: 'Hue', longKey: 'hue', shortKey: 'h' }
+		],
+		case: [[100, 100], ['20%', 0]]
+	}, {
+		describe: 'Satarate, light and bright',
+		it: [
+			{ name: 'Satarate', longKey: 'satarate', shortKey: 's' },
+			{ name: 'Light', longKey: 'light', shortKey: 'l' },
+			{ name: 'Bright', longKey: 'bright', shortKey: 'v' }
+		],
+		case: [[50, 50], ['20%', 20], ['aweg', 0]]
+	}];
+	modify.forEach(function(desc) {
+		describe(desc.describe, function() {
+			desc.it.forEach(function(item) {
+				it(item.name, function() {
+					var color = Color('#0ac3');
+					color[item.longKey] = desc.case[0][0];
+					color[item.shortKey].should.equal(desc.case[0][1], item.longKey + '和' + item.shortKey + '对应同一数据');
+					color.a.should.equal(0.2, 'Alpha不应被修改');
+					desc.case.forEach(function(cItem) {
+						var color2 = Color('#0ac3');
+						color2[item.longKey] = cItem[0];
+						color2[item.longKey].should.equal(cItem[1]);
+					});
+				});
+			});
 		});
 	});
 });
