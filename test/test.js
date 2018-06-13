@@ -7,21 +7,32 @@ describe('Input', function() {
 	});
 	it('Parse object', function() {
 		Color({ r: 100, g: 100, b: 100, a: .5 }).toString().should.equal('rgba(100,100,100,0.5)');
-		Color({ r: '100', g: '100', b: '100' }).toString().should.equal('rgb(100,100,100)');
-		Color({ r: '50%', g: '0%', b: '100%' }).toString().should.equal('rgb(50%,0%,100%)');
+		Color({ r: '100', g: '100', b: '100' }).getValue().should.deep.equal([100, 100, 100, 1]);
+		Color({ r: '50%', g: '0%', b: '100%' }).getValue().should.deep.equal([127.5, 0, 255, 1]);
 		Color({ h: 100, s: 50, l: 50 }).toString().should.equal('hsl(100,50%,50%)');
 		Color({ h: '100', s: '50', l: '50' }).toString().should.equal('hsl(100,50%,50%)');
 		Color({ h: 100, s: 50, v: 50 }).toString().should.equal('hsv(100,50%,50%)');
 	});
+	it('Parse Array', function() {
+		Color([100, 100, 100]).toString().should.equal('#646464');
+		Color([100, 100, 100], { type: 'hex'}).toString().should.equal('#ffffff');
+		Color([100, 100, 100], { type: 'rgb'}).toString().should.equal('rgb(100,100,100)');
+		Color([100, 50, 50], { type: 'hsl'}).toString().should.equal('hsl(100,50%,50%)');
+		Color([100, 50, 50], { type: 'hsv'}).toString().should.equal('hsv(100,50%,50%)');
+		Color([100, 100, 100, .2]).toString().should.equal('rgba(100,100,100,0.2)');
+		Color([100, 50, 50, .2], { type: 'hsl'}).toString().should.equal('hsla(100,50%,50%,0.2)');
+	});
 	describe('Parse text', function() {
-		it('CSS Number and CSS Percent ', function() {
-			Color({ r: '100', g: '200', b: '133' }).toString().should.equal('rgb(100,200,133)');
-			Color({ r: '1e1', g: '100e-1', b: '1e+1' }).toString().should.equal('rgb(10,10,10)', '科学计数法');
+		it('CSS Number, CSS Percent and Unit', function() {
+			Color({ r: '100', g: '200', b: '133' }).getValue().should.deep.equal([100, 200, 133, 1]);
+			Color({ r: '1e1', g: '100e-1', b: '1e+1' }).getValue().should.deep.equal([10, 10, 10, 1], '科学计数法');
 			Color({ h: '-100', s: 50, l: 50 }).h.should.equal(260, '带正号');
 			Color({ h: '+100', s: 50, l: 50 }).h.should.equal(100, '带负号');
 
-			Color({ r: '50.5%', g: '.5%', b: '0.5%' }).toString().should.equal('rgb(50.5%,0.5%,0.5%)', '小数');
-			Color({ r: '50.5%', g: '-.5%', b: '+.5%' }).toString().should.equal('rgb(50.5%,0%,0.5%)', '带正负号的小数');
+			Color({ r: '50.5%', g: '.6%', b: '0.6%' }).getValue().should.deep.equal([128.775, 1.53, 1.53, 1], '小数');
+			Color({ r: '50.5%', g: '-.6%', b: '+.6%' }).getValue().should.deep.equal([128.775, 0, 1.53, 1], '带正负号的小数');
+
+			Color({ h: 100, s: '-50%', l: 50 }).toString().should.equal('hsl(0,0%,50%)', '带负号');
 		});
 		it('Hue', function() {
 			Color({ h: '100', s: 50, l: 50 }).h.should.equal(100);
@@ -91,9 +102,9 @@ describe('Input', function() {
 		});
 		it('HEX', function() {
 			Color('#abc').toString().should.equal('#aabbcc', '简写hex');
-			Color('#abca').toString().should.equal('#aabbccaa', '简写hex8');
+			Color('#abcc').toString().should.equal('rgba(170,187,204,0.8)', '简写hex8');
 			Color('#aabbcc').toString().should.equal('#aabbcc', 'hex');
-			Color('#aabbccaa').toString().should.equal('#aabbccaa', 'hex8');
+			Color('#aabbcccc').toString().should.equal('rgba(170,187,204,0.8)', 'hex8');
 
 			Color('#abcde').toString().should.equal('#000000', '无效的hex');
 			Color('#abg').toString().should.equal('#000000', '无效的hex');
@@ -252,6 +263,111 @@ describe('Input', function() {
 	});
 });
 
+describe('Output', function() {
+	it('toRgbString', function() {
+		var rgb = Color('rgb(100,100,100)');
+		var rgbp = Color('rgb(20%,20%,20%)');
+		rgb.toRgbString().should.equal('rgb(100,100,100)');
+		rgb.a = .2;
+		rgb.toRgbString().should.equal('rgba(100,100,100,0.2)');
+		rgbp.toRgbString().should.equal('rgb(20%,20%,20%)');
+		rgbp.a = .2;
+		rgbp.toRgbString().should.equal('rgba(20%,20%,20%,0.2)');
+
+		Color('rgb(20.0001%,20.001%,20.50000%)').toRgbString().should.equal('rgb(20%,20.001%,20.5%)', '保留3位小数');
+		Color('#abc').toRgbString().should.equal('rgb(170,187,204)');
+	});
+	it('toHslString', function() {
+		var hsl = Color('hsl(100,50%,50%)');
+		hsl.toHslString().should.equal('hsl(100,50%,50%)');
+		hsl.a = .2;
+		hsl.toHslString().should.equal('hsla(100,50%,50%,0.2)');
+
+		Color('hsl(100.0001,20.001%,20.50000%)').toHslString().should.equal('hsl(100,20.001%,20.5%)', '保留3位小数');
+	});
+	it('toHsvString', function() {
+		var hsl = Color('hsv(100,50%,50%)');
+		hsl.toHsvString().should.equal('hsv(100,50%,50%)');
+		hsl.a = .2;
+		hsl.toHsvString().should.equal('hsva(100,50%,50%,0.2)');
+
+		Color('hsv(100.0001,20.001%,20.50000%)').toHsvString().should.equal('hsv(100,20.001%,20.5%)', '保留3位小数');
+	});
+	it('toHexString', function() {
+		var hex = Color('#abc');
+		hex.toHexString().should.equal('#aabbcc');
+		hex.a = .2;
+		hex.toHexString().should.equal('#aabbcc33');
+		hex.r = 170.5;
+		hex.toHexString().should.equal('#abbbcc33');
+		hex.r = 170.4;
+		hex.toHexString().should.equal('#aabbcc33');
+	});
+	it('toKeyword', function() {
+		var color = Color('silver');
+		color.toKeyword().should.equal('silver');
+		color.r = 0;
+		color.toKeyword().should.equal('');
+		color.g = 0; color.b = 0;
+		color.toKeyword().should.equal('black');
+	});
+	describe('toString', function() {
+		it('Transparent', function () {
+			var color = Color('transparent');
+			color.toString().should.equal('transparent');
+			color.a = .5;
+			color.toString().should.equal('rgba(0,0,0,0.5)');
+		});
+		it('Keyword', function() {
+			var color1 = Color('silver');
+			var color2 = Color('silver');
+			color1.toString().should.equal('silver');
+			color1.r = 100;
+			color1.toString().should.equal('#64c0c0');
+			color1.toKeyword().should.equal('');
+			color2.a = .2;
+			color2.toString().should.equal('rgba(192,192,192,0.2)');
+			color2.toKeyword().should.equal('silver');
+		});
+		it('RGB', function() {
+			var rgb = Color('rgb(100,100,100)');
+			rgb.toString().should.equal('rgb(100,100,100)');
+			rgb.h = 100;
+			rgb.toString().should.equal('rgb(100,100,100)');
+		});
+		it('HSL', function() {
+			var hsl = Color('hsl(100,50%,50%)');
+			hsl.toString().should.equal('hsl(100,50%,50%)');
+			hsl.r = 100;
+			hsl.toString().should.equal('hsl(102.941,50%,50%)');
+		});
+		it('HSV', function() {
+			var hsv = Color('hsv(100,50%,50%)');
+			hsv.toString().should.equal('hsv(100,50%,50%)');
+			hsv.r = 100;
+			hsv.toString().should.equal('hsv(85.882,50%,50%)');
+		});
+		it('Hex', function() {
+			var hex = Color('#abc');
+			hex.toString().should.equal('#aabbcc');
+			hex.a = .2;
+			hex.toString().should.equal('rgba(170,187,204,0.2)');
+		});
+		it('指定输出类型', function() {
+			Color('rgb(100,100,100)').toString('hex').should.equal('#646464');
+			var color = Color('#abc');
+			color.toString('transparent').should.equal('#aabbcc');
+			color.toString('keyword').should.equal('#aabbcc');
+			color.toString('rgb').should.equal('rgb(170,187,204)');
+			color.toString('hsl').should.equal('hsl(210,25%,73.333%)');
+			color.toString('hsv').should.equal('hsv(210,16.667%,80%)');
+			color.toString('wag').should.equal('#aabbcc');
+			color.a = .2;
+			color.toString('hex').should.equal('#aabbcc33');
+		});
+	});
+});
+
 describe('Modify', function() {
 	var modify = [{
 		describe: 'RGB',
@@ -301,5 +417,70 @@ describe('Modify', function() {
 		color.a.should.equal(.3);
 		color.alpha = 'wagarg';
 		color.a.should.equal(1);
+	});
+});
+
+describe('Functions', function() {
+	it('random', function() {
+		Color.random().toString().should.not.equal('#000000');
+		Color.random().toString().should.not.equal(Color.random().toString());
+	});
+	it('interpolation', function() {
+		var start = Color('#0000');
+		var end = Color('#fff');
+		var result = 'rgba(0,0,0,0),rgba(85,85,85,0.333),rgba(170,170,170,0.667),#ffffff';
+		Color.interpolation(start, end, 4).join(',').should.equal(result);
+		start.interpolation(end, 4).join(',').should.equal(result);
+		Color.interpolation(start, end).join(',').should.equal('');
+		Color.interpolation(start, end, 1).join(',').should.equal('rgba(0,0,0,0)');
+		var colors = Color.interpolation(start, end, 2);
+		colors[0].should.not.equal(start);
+		colors[1].should.not.equal(end);
+
+	});
+	it('interpolation2d', function() {
+		var tl = Color('#000');
+		var tr = Color('#0f0');
+		var bl = Color('#f00');
+		var br = Color('#ff0');
+		var result = '#000000,#005500,#00aa00,#00ff00|#550000,#555500,#55aa00,#55ff00|#aa0000,#aa5500,#aaaa00,#aaff00|#ff0000,#ff5500,#ffaa00,#ffff00';
+		var parseToString = function(arr) {
+			return arr.map(function(item) { return item.join(','); }).join('|');
+		}
+
+		parseToString(Color.interpolation2d(tl, tr, bl, br, 4, 4)).should.equal(result);
+		parseToString(tl.interpolation2d(tr, bl, br, 4, 4)).should.equal(result);
+
+		parseToString(Color.interpolation2d(tl, tr, bl, br, 4, 1)).should.equal('#000000,#555500,#aaaa00,#ffff00');
+		parseToString(Color.interpolation2d(tl, tr, bl, br, 1, 4)).should.equal('#000000|#555500|#aaaa00|#ffff00');
+
+		var oneHAndOneW = Color.interpolation2d(tl, tr, bl, br, 1, 1);
+		parseToString(oneHAndOneW).should.equal('#000000');
+		oneHAndOneW[0][0].should.not.equal(tl);
+
+		parseToString(Color.interpolation2d(tl, tr, bl, br)).should.equal('');
+		parseToString(Color.interpolation2d(tl, tr, bl, br, 0, 4)).should.equal('');
+		parseToString(Color.interpolation2d(tl, tr, bl, br, 4, 0)).should.equal('');
+	});
+	it('mixAlpha', function() {
+		Color.mixAlpha(Color('#000'), Color('#fff')).toString().should.equal('#000000');
+		Color.mixAlpha(Color('#f003'), Color('#0f0')).toString().should.equal('#33cc00');
+		Color.mixAlpha(Color('#f003'), Color('#0f0c')).toString().should.equal('rgba(61,194,0,0.84)');
+		var color = Color('#000');
+		var mix = color.mixAlpha(Color('#fff'));
+		mix.toString().should.equal('#000000');
+		mix.should.not.equal(color);
+	});
+	it('grayed', function() {
+		var color = Color('orange');
+		var gray = color.grayed();
+		gray.s.should.equal(0);
+		gray.should.not.equal(color);
+	});
+	it('inverting', function() {
+		var color = Color('#333');
+		var inverting = color.inverting();
+		inverting.toString().should.equal('#cccccc');
+		inverting.should.not.equal(color);
 	});
 });
