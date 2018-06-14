@@ -11,19 +11,27 @@
 		return Object.prototype.toString.apply(o) === '[object Array]';
 	}
 	function addVector(v1, v2) {
-		return v1.map((item, index) => v1[index] + v2[index]);
+		return v1.map(function (item, index) {
+			return v1[index] + v2[index];
+		});
 	}
 
 	function subtractVector(v1, v2) {
-		return v1.map((item, index) => v1[index] - v2[index]);
+		return v1.map(function (item, index) {
+			return v1[index] - v2[index];
+		});
 	}
 
 	function multiplyVector(v1, num) {
-		return v1.map(item => item * num);
+		return v1.map(function (item) {
+			return item * num;
+		});
 	}
 
 	function divisionVector(v1, num) {
-		return v1.map(item => item / num);
+		return v1.map(function (item) {
+			return item / num;
+		});
 	}
 
 	var vaildType = {
@@ -562,7 +570,7 @@
 		var colors = [start.clone()];
 		if (count === 1) return colors;
 		var step = divisionVector(subtractVector(end.getValue(), start.getValue()), count - 1);
-		for (let i = 1; i <= count - 2; i++) {
+		for (var i = 1; i <= count - 2; i++) {
 			colors.push(easycolor(addVector(colors[colors.length - 1].getValue(), step)));
 		}
 		colors.push(end.clone());
