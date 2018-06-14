@@ -406,12 +406,15 @@
 		}
 
 		options = options || {};
-		var opt = {
-			type: options.type in vaildType ? options.type : '',
-			percentage: options.percentage === true
-		};
+		var opt = {};
+		if (options.type in vaildType) {
+			opt.type = options.type;
+		}
+		if (typeof options.percentage !== 'undefined') {
+			opt.percentage = Boolean(options.percentage);
+		}
 
-		var percentage = opt.percentage;
+		var percentage = false;
 		var val;
 		var type;
 
@@ -471,7 +474,6 @@
 				type = opt.type;
 			} else {
 				type = 'rgb';
-				opt.type = 'hex';
 			}
 			if (type === 'hsl') {
 				color = { h: arr[0], s: arr[1], l: arr[2] };
@@ -488,10 +490,8 @@
 		if (typeof type === 'undefined' && typeof color === 'object') {
 			if (isMatch(color.r, 'number') && isMatch(color.g, 'number') && isMatch(color.b, 'number')) {
 				type = 'rgb';
-				opt.type = 'hex';
 			} else if (isMatch(color.r, 'percent') && isMatch(color.g, 'percent') && isMatch(color.b, 'percent')) {
 				type = 'rgb';
-				opt.type = 'hex';
 				percentage = true;
 			} else if (isMatch(color.h, 'hue') && isMatch(color.s, 'unit') && isMatch(color.l, 'unit')) {
 				type = 'hsl';
@@ -536,9 +536,12 @@
 			val.a = isMatch(color.a, 'unit') ? parseAlpha(color.a) : 1;
 		}
 
+		if (type === 'rgb' && !opt.type) {
+			opt.type = 'hex';
+		}
 		this._val = val;
 		this._type = opt.type || type || 'hex';
-		this._percentage = opt.percentage || percentage;
+		this._percentage = typeof opt.percentage === 'undefined' ? percentage : Boolean(opt.percentage);
 	}
 
 	easycolor.random = function () {
@@ -736,7 +739,7 @@
 				type = 'rgb';
 			}
 			if (type === 'rgb') {
-				return this.toRgbString();
+				return percent ? this.toRgbPercentString() : this.toRgbString();
 			} else if (type === 'hsl') {
 				return this.toHslString();
 			} else if (type === 'hsv') {
@@ -747,16 +750,15 @@
 		},
 		toRgbString: function () {
 			var val = this._val;
-			var percent = this._percentage;
-			if (percent) {
-				return val.a === 1 ?
-					'rgb(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%)' :
-					'rgba(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%,' + this.a + ')';
-			} else {
-				return val.a === 1 ?
-				'rgb(' + this.r + ',' + this.g + ',' + this.b + ')' :
-				'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a + ')';
-			}
+			return val.a === 1 ?
+			'rgb(' + this.r + ',' + this.g + ',' + this.b + ')' :
+			'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a + ')';
+		},
+		toRgbPercentString: function () {
+			var val = this._val;
+			return val.a === 1 ?
+				'rgb(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%)' :
+				'rgba(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%,' + this.a + ')';
 		},
 		toHslString: function () {
 			var val = this._val;

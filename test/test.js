@@ -1,5 +1,5 @@
 var chai = require('chai');
-var easycolor = require('../Color');
+var easycolor = require('../easycolor');
 var should = chai.should();
 describe('Input', function() {
 	it('easycolor instance', function() {
@@ -49,13 +49,13 @@ describe('Input', function() {
 			easycolor({ r: 100, g: 100, b: 100, a: '50%' }).a.should.equal(0.5, '支持百分比');
 			easycolor({ r: 100, g: 100, b: 100, a: 'awgwef' }).a.should.equal(1, '非数字');
 		});
-		it('RGB & RGBa', function() {
-			easycolor('rgb(100,200,133)').toString().should.equal('rgb(100,200,133)');
-			easycolor('rgb( 100	, 200,133	)').toString().should.equal('rgb(100,200,133)', '多余空白符');
-			easycolor('rgb( 100	200 133	)').toString().should.equal('rgb(100,200,133)', '支持空白符分隔');
+		it('RGB & RGBA', function() {
+			easycolor('rgb(100,200,133)').getValue().should.deep.equal([100, 200, 133, 1]);
+			easycolor('rgb( 100	, 200,133	)').getValue().should.deep.equal([100, 200, 133, 1], '多余空白符');
+			easycolor('rgb( 100	200 133	)').getValue().should.deep.equal([100, 200, 133, 1], '支持空白符分隔');
 
-			easycolor('rgb(50%,200%,80.5%)').toString().should.equal('rgb(50%,100%,80.5%)', '支持百分比');
-			easycolor('rgb(50%	,200%,80.5%  )').toString().should.equal('rgb(50%,100%,80.5%)', '百分比+多余空白符');
+			easycolor('rgb(50%,200%,80.5%)').getValue().should.deep.equal([127.5, 255, 205.275, 1], '支持百分比');
+			easycolor('rgb(50%	,200%,80.5%  )').getValue().should.deep.equal([127.5, 255, 205.275, 1], '百分比+多余空白符');
 
 			easycolor('rgba(100,200,133,.5)').toString().should.equal('rgba(100,200,133,0.5)');
 			easycolor('rgba(100,200,133 , .5)').toString().should.equal('rgba(100,200,133,0.5)');
@@ -64,11 +64,10 @@ describe('Input', function() {
 			easycolor('rgba(100 200 133 / .5)').toString().should.equal('rgba(100,200,133,0.5)');
 			easycolor('rgba(50%,200%,80.5%,50%)').toString().should.equal('rgba(50%,100%,80.5%,0.5)');
 
-			easycolor('rgb(-100,266,133)').toString().should.equal('rgb(0,255,133)', '小于0置为0；大于255置为255');
-			easycolor('rgb(100.1,200.5,133.6)').toString().should.equal('rgb(100,201,134)', '小数部分四舍五入');
+			easycolor('rgb(-100,266,133)').getValue().should.deep.equal([0, 255, 133, 1], '小于0置为0；大于255置为255');
 			easycolor('rgb( 100	200% 133	)').toString().should.equal('#000000', '不支持百分比和数字混合');
 		});
-		it('HSL & HSLa', function() {
+		it('HSL & HSLA', function() {
 			easycolor('hsl(100,50%,50%)').toString().should.equal('hsl(100,50%,50%)');
 			easycolor('hsl( 100	, 50%,50%	)').toString().should.equal('hsl(100,50%,50%)', '多余空白符');
 			easycolor('hsl( 100	50% 50%	)').toString().should.equal('hsl(100,50%,50%)', '支持空白符分隔');
@@ -83,7 +82,7 @@ describe('Input', function() {
 			easycolor('hsl(0,-50%,150%)').toString().should.equal('hsl(0,0%,100%)', 'sl小于0置为0；大于100置为100');
 			easycolor('hsl(100,50%,50)').toString().should.equal('#000000', 'sl不支持数字');
 		});
-		it('HSV & HSVa', function() {
+		it('HSV & HSVA', function() {
 			easycolor('hsv(100,50%,50%)').toString().should.equal('hsv(100,50%,50%)');
 			easycolor('hsb(100,50%,50%)').toString().should.equal('hsv(100,50%,50%)');
 			easycolor('hsv( 100	, 50%,50%	)').toString().should.equal('hsv(100,50%,50%)', '多余空白符');
@@ -261,21 +260,47 @@ describe('Input', function() {
 			easycolor('rebeccapurple').toString().should.equal('rebeccapurple');
 		});
 	});
+	describe('配置项', function() {
+		it('type', function() {
+			easycolor('rgb(100,200,133)').toString().should.equal('#64c885');
+			easycolor('rgb(100,200,133)', { type: 'rgb' }).toString().should.equal('rgb(100,200,133)');
+			easycolor('rgb(100,200,133)', { type: 'hsl' }).toString().should.equal('hsl(139.8,47.619%,58.824%)');
+
+			easycolor([100, 50, 50]).toString().should.equal('#643232');
+			easycolor([100, 50, 50], { type: 'hsl'}).toString().should.equal('hsl(100,50%,50%)', '按输入的类型解析');
+
+			easycolor({ r: 100, g: 100, b: 100 }).toString().should.equal('#646464');
+			easycolor({ r: 100, g: 100, b: 100 }, { type: 'hsl' }).toString().should.equal('hsl(0,0%,39.216%)');
+
+			easycolor('hsl(100,50%,50%)', { type: '' }).toString().should.equal('hsl(100,50%,50%)');
+		});
+		it('percentage', function() {
+			easycolor('rgb(51,51,51)').toString().should.equal('#333333');
+			easycolor('rgb(51,51,51)', { percentage: true }).toString().should.equal('#333333');
+			easycolor('rgb(51,51,51)', { type: 'rgb', percentage: true }).toString().should.equal('rgb(20%,20%,20%)');
+			easycolor('rgb(50%,100%,80%)', { type: 'rgb' }).toString().should.equal('rgb(50%,100%,80%)');
+			easycolor('rgb(50%,100%,80%)', { type: 'rgb', percentage: false }).toString().should.equal('rgb(128,255,204)');
+		});
+	});
 });
 
 describe('Output', function() {
 	it('toRgbString', function() {
 		var rgb = easycolor('rgb(100,100,100)');
-		var rgbp = easycolor('rgb(20%,20%,20%)');
 		rgb.toRgbString().should.equal('rgb(100,100,100)');
 		rgb.a = .2;
 		rgb.toRgbString().should.equal('rgba(100,100,100,0.2)');
-		rgbp.toRgbString().should.equal('rgb(20%,20%,20%)');
-		rgbp.a = .2;
-		rgbp.toRgbString().should.equal('rgba(20%,20%,20%,0.2)');
 
-		easycolor('rgb(20.0001%,20.001%,20.50000%)').toRgbString().should.equal('rgb(20%,20.001%,20.5%)', '保留3位小数');
+		easycolor('rgb(100.1,200.5,133.6)').toRgbString().should.equal('rgb(100,201,134)', '小数部分四舍五入');
 		easycolor('#abc').toRgbString().should.equal('rgb(170,187,204)');
+	});
+	it('toRgbPercentString', function() {
+		var rgbp = easycolor('rgb(20%,20%,20%)');
+		rgbp.toRgbPercentString().should.equal('rgb(20%,20%,20%)');
+		rgbp.a = .2;
+		rgbp.toRgbPercentString().should.equal('rgba(20%,20%,20%,0.2)');
+
+		easycolor('rgb(20.0001%,20.001%,20.50000%)').toRgbPercentString().should.equal('rgb(20%,20.001%,20.5%)', '保留3位小数');
 	});
 	it('toHslString', function() {
 		var hsl = easycolor('hsl(100,50%,50%)');
@@ -331,9 +356,9 @@ describe('Output', function() {
 		});
 		it('RGB', function() {
 			var rgb = easycolor('rgb(100,100,100)');
-			rgb.toString().should.equal('rgb(100,100,100)');
+			rgb.toString().should.equal('#646464');
 			rgb.h = 100;
-			rgb.toString().should.equal('rgb(100,100,100)');
+			rgb.toString().should.equal('#646464');
 		});
 		it('HSL', function() {
 			var hsl = easycolor('hsl(100,50%,50%)');
@@ -482,5 +507,12 @@ describe('Functions', function() {
 		var inverting = color.inverting();
 		inverting.toString().should.equal('#cccccc');
 		inverting.should.not.equal(color);
+	});
+	it('clone', function() {
+		var color1 = easycolor('red');
+		var color2 = color1.clone();
+		color2.r = 100;
+		color1.toString().should.equal('red');
+		color2.toString().should.equal('#640000');
 	});
 });
