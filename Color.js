@@ -397,12 +397,12 @@
 		}
 	}
 
-	function Color (color, options) {
-		if (color instanceof Color) {
+	function easycolor (color, options) {
+		if (color instanceof easycolor) {
 			return color.clone();
 		}
-		if (!(this instanceof Color)) {
-			return new Color(color, options);
+		if (!(this instanceof easycolor)) {
+			return new easycolor(color, options);
 		}
 
 		options = options || {};
@@ -541,17 +541,17 @@
 		this._percentage = opt.percentage || percentage;
 	}
 
-	Color.random = function () {
-		return Color({
+	easycolor.random = function () {
+		return easycolor({
 			r: Math.floor(Math.random() * 256),
 			g: Math.floor(Math.random() * 256),
 			b: Math.floor(Math.random() * 256),
 		});
 	};
 
-	Color.interpolation = function (start, end, count) {
-		if (!(start instanceof Color) ||
-			!(end instanceof Color)
+	easycolor.interpolation = function (start, end, count) {
+		if (!(start instanceof easycolor) ||
+			!(end instanceof easycolor)
 		) {
 			throw new TypeError();
 		}
@@ -560,38 +560,38 @@
 		if (count === 1) return colors;
 		var step = divisionVector(subtractVector(end.getValue(), start.getValue()), count - 1);
 		for (let i = 1; i <= count - 2; i++) {
-			colors.push(Color(addVector(colors[colors.length - 1].getValue(), step)));
+			colors.push(easycolor(addVector(colors[colors.length - 1].getValue(), step)));
 		}
 		colors.push(end.clone());
 		return colors;
 	};
 
-	Color.interpolation2d = function (tl, tr, bl, br, width, height) {
-		if (!(tl instanceof Color) ||
-			!(tr instanceof Color) ||
-			!(bl instanceof Color) ||
-			!(br instanceof Color)
+	easycolor.interpolation2d = function (tl, tr, bl, br, width, height) {
+		if (!(tl instanceof easycolor) ||
+			!(tr instanceof easycolor) ||
+			!(bl instanceof easycolor) ||
+			!(br instanceof easycolor)
 		) {
 			throw new TypeError();
 		}
 		if (!width || !height) return [];
 		if (width === 1 && height === 1) return [[tl.clone()]];
 		if (height === 1) {
-			return [Color.interpolation(tl, br, width)];
+			return [easycolor.interpolation(tl, br, width)];
 		}
 		if (width === 1) {
-			return Color.interpolation(tl, br, height).map(function (item) {
+			return easycolor.interpolation(tl, br, height).map(function (item) {
 				return [item];
 			});
 		}
-		var lineHeads = Color.interpolation(tl, bl, height);
-		var lineTails = Color.interpolation(tr, br, height);
+		var lineHeads = easycolor.interpolation(tl, bl, height);
+		var lineTails = easycolor.interpolation(tr, br, height);
 		return lineHeads.map(function (item, index) {
-			return Color.interpolation(lineHeads[index], lineTails[index], width);
+			return easycolor.interpolation(lineHeads[index], lineTails[index], width);
 		});
 	};
 
-	Color.mixAlpha = function (a, b) {
+	easycolor.mixAlpha = function (a, b) {
 		var a1 = a.a, a2 = b.a;
 		var color1 = a.getValue();
 		var color2 = b.getValue();
@@ -603,7 +603,7 @@
 			b: rgb[2],
 			a: alpha
 		}
-		return Color(val);
+		return easycolor(val);
 	};
 
 	[
@@ -614,7 +614,7 @@
 		{ name: 'blue', key: 'b' },
 		{ name: 'b', key: 'b' }
 	].forEach(function (item) {
-		Object.defineProperty(Color.prototype, item.name, {
+		Object.defineProperty(easycolor.prototype, item.name, {
 			get: function () {
 				return Math.round(this._val[item.key]);
 			},
@@ -631,7 +631,7 @@
 	});
 
 	['hue', 'h'].forEach(function (item) {
-		Object.defineProperty(Color.prototype, item, {
+		Object.defineProperty(easycolor.prototype, item, {
 			get: function () {
 				var val = this._val;
 				return toFixed(rgbToHue(val.r, val.g, val.b), decimalPoint);
@@ -656,7 +656,7 @@
 		{ name: 'light', key: 'l' },
 		{ name: 'l', key: 'l' }
 	].forEach(function (item) {
-		Object.defineProperty(Color.prototype, item.name, {
+		Object.defineProperty(easycolor.prototype, item.name, {
 			get: function () {
 				var val = this._val;
 				return toFixed(rgbToHsl(val.r, val.g, val.b)[item.key], decimalPoint);
@@ -676,7 +676,7 @@
 	});
 
 	['bright', 'v'].forEach(function (item) {
-		Object.defineProperty(Color.prototype, item, {
+		Object.defineProperty(easycolor.prototype, item, {
 			get: function () {
 				var val = this._val;
 				return toFixed(rgbToHsv(val.r, val.g, val.b).v, decimalPoint);
@@ -696,7 +696,7 @@
 	});
 
 	['alpha', 'a'].forEach(function (item) {
-		Object.defineProperty(Color.prototype, item, {
+		Object.defineProperty(easycolor.prototype, item, {
 			get: function () {
 				return toFixed(this._val.a, decimalPoint);
 			},
@@ -712,7 +712,7 @@
 		});
 	});
 
-	simpleExtend(Color.prototype, {
+	simpleExtend(easycolor.prototype, {
 		toString: function (oType) {
 			var val = this._val;
 			var type = (oType in vaildType && oType) || this._type;
@@ -793,25 +793,25 @@
 		grayed: function () {
 			var val = this._val;
 			var gray = val.r * 0.3 + val.g * 0.58 + val.b * 0.11;
-			return Color({ r: gray, g: gray, b: gray, a: val.a });
+			return easycolor({ r: gray, g: gray, b: gray, a: val.a });
 		},
 		inverting: function () {
 			var val = this._val;
-			return Color({ r: 255 - val.r, g: 255 - val.g, b: 255 - val.b });
+			return easycolor({ r: 255 - val.r, g: 255 - val.g, b: 255 - val.b });
 		},
 
 		interpolation: function (end, count) {
-			return Color.interpolation(this, end, count);
+			return easycolor.interpolation(this, end, count);
 		},
 		interpolation2d: function (tr, bl, br, width, height) {
-			return Color.interpolation2d(this, tr, bl, br, width, height);
+			return easycolor.interpolation2d(this, tr, bl, br, width, height);
 		},
 		mixAlpha: function (b) {
-			return Color.mixAlpha(this, b);
+			return easycolor.mixAlpha(this, b);
 		},
 
 		clone: function () {
-			return Color(this._val, {
+			return easycolor(this._val, {
 				type: this._type,
 				percentage: this._percentage
 			});
@@ -819,9 +819,9 @@
 	});
 
 	if (typeof module !== 'undefined' && module.exports) {
-		module.exports = Color;
+		module.exports = easycolor;
 	} else {
-		window.Color = Color;
+		window.easycolor = easycolor;
 	}
 
 })();
