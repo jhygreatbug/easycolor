@@ -2,6 +2,8 @@
 
 ## 说明
 
+Easycolor是一个用于处理CSS颜色的库。它允许多种形式的输入，可以对颜色进行修改和转换，同时提供了颜色相关的方法。
+
 ### 兼容性
 
 支持IE9+。
@@ -9,6 +11,16 @@
 ## 用法
 
 ### 快速上手
+
+下载[easycolor.js](https://github.com/jhygreatbug/easycolor/releases/download/v0.0.1/easycolor.js)或[easycolor.min.js](https://github.com/jhygreatbug/easycolor/releases/download/v0.0.1/easycolor.min.js)
+
+使用script标签引入
+
+```html
+<script src="easycolor.js"></script>
+```
+
+开始使用
 
 ```js
 // 输入
@@ -47,12 +59,12 @@ easycolor({ r: 100, g: 100, b: 100, a: .5 });
 
 // 数组
 easycolor([100, 100, 100]);		// '#646464'
-easycolor([100, 100, 100, .2]);	// 'rgba(100,100,100,0.2)'
+easycolor([100, 100, 100, .2]);		// 'rgba(100,100,100,0.2)'
 
 // easycolor实例
 var a = easycolor({ r: 100, g: 100, b: 100, a: .5 });
 var b = easycolor(a);
-a === b;						// false
+a === b;				// false
 ```
 
 #### 配置参数
@@ -76,14 +88,14 @@ a === b;						// false
 如果输入类型为easycolor实例，type会被忽略
 
 ```js
-easycolor('rgb(100,200,133)');						// '#646464'						识别为rgb类型的color，输出类型会置为hex
-easycolor('rgb(100,200,133)', { type: 'rgb' });		// 'rgb(100, 200, 133)'
-easycolor('rgb(100,200,133)', { type: 'hsl' });		// 'hsl(139.8, 47.619%, 58.824%)'
+easycolor('rgb(100,200,133)');					// '#646464' 识别为rgb类型的color，输出类型会置为hex
+easycolor('rgb(100,200,133)', { type: 'rgb' });			// 'rgb(100, 200, 133)'
+easycolor('rgb(100,200,133)', { type: 'hsl' });			// 'hsl(139.8, 47.619%, 58.824%)'
 
-easycolor([100, 50, 50]);							// '#643232'
-easycolor([100, 50, 50], { type: 'hsl'})			// 'hsl(100,50%,50%)'				指定了输入的解析类型
+easycolor([100, 50, 50]);					// '#643232'
+easycolor([100, 50, 50], { type: 'hsl'})			// 'hsl(100,50%,50%)' 指定了输入的解析类型
 
-easycolor({ r: 100, g: 100, b: 100 });						// 'rgb(100,100,100)'
+easycolor({ r: 100, g: 100, b: 100 });				// 'rgb(100,100,100)'
 easycolor({ r: 100, g: 100, b: 100 }, { type: 'hsl' });		// 'hsl(0,0%,39.216%)'
 ```
 
@@ -96,11 +108,11 @@ easycolor({ r: 100, g: 100, b: 100 }, { type: 'hsl' });		// 'hsl(0,0%,39.216%)'
 `false`
 
 ```js
-easycolor('rgb(51,51,51)');												// '#333333'
-easycolor('rgb(51,51,51)', { percentage: true });						// '#333333'
+easycolor('rgb(51,51,51)');							// '#333333'
+easycolor('rgb(51,51,51)', { percentage: true });				// '#333333'
 easycolor('rgb(51,51,51)', { type: 'rgb', percentage: true });			// 'rgb(20%,20%,20%)'
 
-easycolor('rgb(50%,100%,80%)', { type: 'rgb' });						// 'rgb(50%,100%,80%)'
+easycolor('rgb(50%,100%,80%)', { type: 'rgb' });				// 'rgb(50%,100%,80%)'
 easycolor('rgb(50%,100%,80%)', { type: 'rgb', percentage: false });		// 'rgb(128,255,204)'
 ```
 
@@ -296,17 +308,17 @@ color.a === 1;						// true
 
 ```js
 var transparent = easycolor('transparent');
-transparent.toString();				// 'transparent'
+transparent.toString();					// 'transparent'
 transparent.a = .5;
-transparent.toString();				// 'rgba(0,0,0,0.5)'
+transparent.toString();					// 'rgba(0,0,0,0.5)'
 
 var keyword1 = easycolor('silver');
 var keyword2 = easycolor('silver');
-keyword1.toString();				// 'silver'
+keyword1.toString();					// 'silver'
 keyword1.r = 100;
-keyword1.toString();				// '#64c0c0'
+keyword1.toString();					// '#64c0c0'
 keyword2.a = .2;
-keyword2.toString();				// 'rgba(192,192,192,0.2)'
+keyword2.toString();					// 'rgba(192,192,192,0.2)'
 
 var rgb = easycolor('rgb(100,100,100)');
 rgb.toString();						// '#646464'
@@ -330,12 +342,12 @@ easycolor('#0003');					// 'rgba(0, 0, 0, .2)'
 
 ```js
 var rgb = easycolor('rgb(100,100,100)');
-rgb.toRgbString();									// 'rgb(100,100,100)'
+rgb.toRgbString();					// 'rgb(100,100,100)'
 rgb.a = .2;
-rgb.toRgbString();									// 'rgba(100,100,100,0.2)'
+rgb.toRgbString();					// 'rgba(100,100,100,0.2)'
 
 easycolor('rgb(100.1,200.5,133.6)').toRgbString()	// 'rgb(100,201,134)'
-easycolor('#abc').toRgbString()						// 'rgb(170,187,204)'
+easycolor('#abc').toRgbString()				// 'rgb(170,187,204)'
 ```
 
 #### toRgbPercentString
@@ -344,9 +356,9 @@ easycolor('#abc').toRgbString()						// 'rgb(170,187,204)'
 
 ```js
 var rgbp = easycolor('rgb(20%,20%,20%)');
-rgbp.toRgbPercentString();			// 'rgb(20%,20%,20%)'
+rgbp.toRgbPercentString();				// 'rgb(20%,20%,20%)'
 rgbp.a = .2;
-rgbp.toRgbPercentString();			// 'rgba(20%,20%,20%,0.2)'
+rgbp.toRgbPercentString();				// 'rgba(20%,20%,20%,0.2)'
 
 easycolor('rgb(20.0001%,20.001%,20.50000%)').toRgbPercentString();	// 'rgb(20%,20.001%,20.5%)'
 ```
@@ -359,7 +371,7 @@ hsl.toHslString();					// 'hsl(100,50%,50%)'
 hsl.a = .2;
 hsl.toHslString();					// 'hsla(100,50%,50%,0.2)'
 
-easycolor('hsl(100.0001,20.001%,20.50000%)').toHslString();			// 'hsl(100,20.001%,20.5%)'
+easycolor('hsl(100.0001,20.001%,20.50000%)').toHslString();	// 'hsl(100,20.001%,20.5%)'
 ```
 
 #### toHsvString
@@ -369,7 +381,7 @@ hsv.toHsvString();					// 'hsv(100,50%,50%)'
 hsv.a = .2;
 hsv.toHsvString();					// 'hsva(100,50%,50%,0.2)'
 
-easycolor('hsv(100.0001,20.001%,20.50000%)').toHsvString();			// 'hsv(100,20.001%,20.5%)'
+easycolor('hsv(100.0001,20.001%,20.50000%)').toHsvString();	// 'hsv(100,20.001%,20.5%)'
 ```
 
 #### toHexString
@@ -414,7 +426,7 @@ color.a === 1;						// always true
 
 ```js
 var color = easycolor('orange');
-color.grayed().toString();			// '#acacac'
+color.grayed().toString();				// '#acacac'
 ```
 
 #### inverting
@@ -423,7 +435,7 @@ color.grayed().toString();			// '#acacac'
 
 ```js
 var color = easycolor('rgba(20%,20%,20%,.2)');
-color.inverting().toString()		// 'rgba(80%,80%,80%,0.2)'
+color.inverting().toString()				// 'rgba(80%,80%,80%,0.2)'
 ```
 
 #### interpolation
@@ -435,7 +447,7 @@ var start = easycolor('#0000');
 var end = easycolor('#fff');
 
 easycolor.interpolation(start, end, 4).join(',');	// 'rgba(0,0,0,0),rgba(85,85,85,0.333),rgba(170,170,170,0.667),#ffffff'
-start.interpolation(end, 4).join(',');				// 'rgba(0,0,0,0),rgba(85,85,85,0.333),rgba(170,170,170,0.667),#ffffff'
+start.interpolation(end, 4).join(',');			// 'rgba(0,0,0,0),rgba(85,85,85,0.333),rgba(170,170,170,0.667),#ffffff'
 
 easycolor.interpolation(start, end).join(',');		// ''
 easycolor.interpolation(start, end, 1).join(',')	// 'rgba(0,0,0,0)'
@@ -461,9 +473,9 @@ parseToString(easycolor.interpolation2d(tl, tr, bl, br, 4, 1));			// '#000000,#5
 parseToString(easycolor.interpolation2d(tl, tr, bl, br, 1, 4));			// '#000000|#555500|#aaaa00|#ffff00'
 
 var oneHAndOneW = easycolor.interpolation2d(tl, tr, bl, br, 1, 1);
-parseToString(oneHAndOneW);												// '#000000'
+parseToString(oneHAndOneW);							// '#000000'
 
-parseToString(easycolor.interpolation2d(tl, tr, bl, br));				// ''
+parseToString(easycolor.interpolation2d(tl, tr, bl, br));			// ''
 parseToString(easycolor.interpolation2d(tl, tr, bl, br, 0, 4));			// ''
 parseToString(easycolor.interpolation2d(tl, tr, bl, br, 4, 0));			// ''
 ```
@@ -473,9 +485,9 @@ parseToString(easycolor.interpolation2d(tl, tr, bl, br, 4, 0));			// ''
 输入前景色和背景色，返回两个颜色的透明度混合结果。
 
 ```js
-easycolor.mixAlpha(easycolor('#000'), easycolor('#fff')).toString();	// '#000000'
-easycolor.mixAlpha(easycolor('#f003'), easycolor('#0f0')).toString();	// '#33cc00'
-easycolor.mixAlpha(easycolor('#f003'), easycolor('#0f0c')).toString();	// 'rgba(61,194,0,0.84)'
+easycolor.mixAlpha(easycolor('#000'), easycolor('#fff')).toString();		// '#000000'
+easycolor.mixAlpha(easycolor('#f003'), easycolor('#0f0')).toString();		// '#33cc00'
+easycolor.mixAlpha(easycolor('#f003'), easycolor('#0f0c')).toString();		// 'rgba(61,194,0,0.84)'
 ```
 
 #### clone
