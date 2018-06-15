@@ -467,7 +467,7 @@ var parseToString = function(arr) {
 }
 
 parseToString(easycolor.interpolation2d(tl, tr, bl, br, 4, 4));			// '#000000,#005500,#00aa00,#00ff00|#550000,#555500,#55aa00,#55ff00|#aa0000,#aa5500,#aaaa00,#aaff00|#ff0000,#ff5500,#ffaa00,#ffff00'
-parseToString(tl.interpolation2d(tr, bl, br, 4, 4));					// '#000000,#005500,#00aa00,#00ff00|#550000,#555500,#55aa00,#55ff00|#aa0000,#aa5500,#aaaa00,#aaff00|#ff0000,#ff5500,#ffaa00,#ffff00'
+parseToString(tl.interpolation2d(tr, bl, br, 4, 4));				// '#000000,#005500,#00aa00,#00ff00|#550000,#555500,#55aa00,#55ff00|#aa0000,#aa5500,#aaaa00,#aaff00|#ff0000,#ff5500,#ffaa00,#ffff00'
 
 parseToString(easycolor.interpolation2d(tl, tr, bl, br, 4, 1));			// '#000000,#555500,#aaaa00,#ffff00'
 parseToString(easycolor.interpolation2d(tl, tr, bl, br, 1, 4));			// '#000000|#555500|#aaaa00|#ffff00'
