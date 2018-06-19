@@ -103,7 +103,7 @@ easycolor.mixAlpha = function (a, b) {
 		},
 		set: function (val) {
 			this._val[item.key] = cp.rgbNumber(val);
-		},
+		}
 	});
 });
 
@@ -119,44 +119,49 @@ easycolor.mixAlpha = function (a, b) {
 			hsl.h = cp.hue(val);
 			this._val = hslToRgb(hsl.h, hsl.s, hsl.l);
 			this._val.a = old.a;
-		},
+		}
 	});
 });
 
 [
-	{ name: 'satarate', key: 's' },
-	{ name: 's', key: 's' },
+	{ name: 'sataratel', key: 'sl' },
+	{ name: 'sl', key: 'sl' },
 	{ name: 'light', key: 'l' },
 	{ name: 'l', key: 'l' }
 ].forEach(function (item) {
 	Object.defineProperty(easycolor.prototype, item.name, {
 		get: function () {
 			var val = this._val;
-			return cp.to.percent(rgbToHsl(val.r, val.g, val.b)[item.key]);
+			return cp.to.percent(rgbToHsl(val.r, val.g, val.b)[item.key === 'sl' ? 's' : item.key]);
 		},
 		set: function (val) {
 			var old = this._val;
 			var hsl = rgbToHsl(old.r, old.g, old.b);
-			hsl[item.key] = cp.percent(val);
+			hsl[item.key === 'sl' ? 's' : item.key] = cp.percent(val);
 			this._val = hslToRgb(hsl.h, hsl.s, hsl.l);
 			this._val.a = old.a;
-		},
+		}
 	});
 });
 
-['bright', 'v'].forEach(function (item) {
-	Object.defineProperty(easycolor.prototype, item, {
+[
+	{ name: 'sataratev', key: 'sv' },
+	{ name: 'sv', key: 'sv' },
+	{ name: 'bright', key: 'v' },
+	{ name: 'v', key: 'v' }
+].forEach(function (item) {
+	Object.defineProperty(easycolor.prototype, item.name, {
 		get: function () {
 			var val = this._val;
-			return cp.to.percent(rgbToHsv(val.r, val.g, val.b).v);
+			return cp.to.percent(rgbToHsv(val.r, val.g, val.b)[item.key === 'sv' ? 's' : item.key]);
 		},
 		set: function (val) {
 			var old = this._val;
 			var hsv = rgbToHsv(old.r, old.g, old.b);
-			hsv.v = cp.percent(val);
+			hsv[item.key === 'sv' ? 's' : item.key] = cp.percent(val);
 			this._val = hsvToRgb(hsv.h, hsv.s, hsv.v);
 			this._val.a = old.a;
-		},
+		}
 	});
 });
 
@@ -167,7 +172,7 @@ easycolor.mixAlpha = function (a, b) {
 		},
 		set: function (val) {
 			this._val.a = cp.alpha(val);
-		},
+		}
 	});
 });
 

@@ -242,8 +242,9 @@ easycolor('transparent');
 `g`/`green`
 `b`/`blue`
 `h`/`hue`（色相）
-`s`/`satarate`（饱和度）
+`sl`/`sataratel`（hsl模式饱和度）
 `l`/`light`（亮度）
+`sv`/`sataratev`（hsv模式饱和度）
 `v`/`bright`（明度）
 `a`/`alpha`（不透明度）
 
@@ -268,18 +269,18 @@ var color = easycolor('red');
 color.h = 100;
 ```
 
-#### s/satarate, l/light, v/bright
+#### sl/sataratel, l/light, sv/sataratev, v/bright
 
 接收数字及百分比，范围为0 ~ 100。小于0置为0，大于100置为100。
 
 ```js
 var color = easycolor('red');
-color.s = 50;
+color.sl = 50;
 
-color.s = -50;
-color.s === 0;						// true
-color.s = 150;
-color.s === 100;					// true
+color.sl = -50;
+color.sl === 0;						// true
+color.sl = 150;
+color.sl === 100;					// true
 ```
 
 #### a/alpha

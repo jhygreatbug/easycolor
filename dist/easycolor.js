@@ -733,7 +733,7 @@
 			},
 			set: function (val) {
 				this._val[item.key] = colorParser.rgbNumber(val);
-			},
+			}
 		});
 	});
 
@@ -749,44 +749,49 @@
 				hsl.h = colorParser.hue(val);
 				this._val = hslToRgb(hsl.h, hsl.s, hsl.l);
 				this._val.a = old.a;
-			},
+			}
 		});
 	});
 
 	[
-		{ name: 'satarate', key: 's' },
-		{ name: 's', key: 's' },
+		{ name: 'sataratel', key: 'sl' },
+		{ name: 'sl', key: 'sl' },
 		{ name: 'light', key: 'l' },
 		{ name: 'l', key: 'l' }
 	].forEach(function (item) {
 		Object.defineProperty(easycolor.prototype, item.name, {
 			get: function () {
 				var val = this._val;
-				return colorParser.to.percent(rgbToHsl(val.r, val.g, val.b)[item.key]);
+				return colorParser.to.percent(rgbToHsl(val.r, val.g, val.b)[item.key === 'sl' ? 's' : item.key]);
 			},
 			set: function (val) {
 				var old = this._val;
 				var hsl = rgbToHsl(old.r, old.g, old.b);
-				hsl[item.key] = colorParser.percent(val);
+				hsl[item.key === 'sl' ? 's' : item.key] = colorParser.percent(val);
 				this._val = hslToRgb(hsl.h, hsl.s, hsl.l);
 				this._val.a = old.a;
-			},
+			}
 		});
 	});
 
-	['bright', 'v'].forEach(function (item) {
-		Object.defineProperty(easycolor.prototype, item, {
+	[
+		{ name: 'sataratev', key: 'sv' },
+		{ name: 'sv', key: 'sv' },
+		{ name: 'bright', key: 'v' },
+		{ name: 'v', key: 'v' }
+	].forEach(function (item) {
+		Object.defineProperty(easycolor.prototype, item.name, {
 			get: function () {
 				var val = this._val;
-				return colorParser.to.percent(rgbToHsv(val.r, val.g, val.b).v);
+				return colorParser.to.percent(rgbToHsv(val.r, val.g, val.b)[item.key === 'sv' ? 's' : item.key]);
 			},
 			set: function (val) {
 				var old = this._val;
 				var hsv = rgbToHsv(old.r, old.g, old.b);
-				hsv.v = colorParser.percent(val);
+				hsv[item.key === 'sv' ? 's' : item.key] = colorParser.percent(val);
 				this._val = hsvToRgb(hsv.h, hsv.s, hsv.v);
 				this._val.a = old.a;
-			},
+			}
 		});
 	});
 
@@ -797,7 +802,7 @@
 			},
 			set: function (val) {
 				this._val.a = colorParser.alpha(val);
-			},
+			}
 		});
 	});
 

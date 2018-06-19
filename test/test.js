@@ -411,7 +411,8 @@ describe('Modify', function() {
 	}, {
 		describe: 'Satarate, light and bright',
 		it: [
-			{ name: 'Satarate', longKey: 'satarate', shortKey: 's' },
+			{ name: 'Satarate(hsl)', longKey: 'sataratel', shortKey: 'sl' },
+			{ name: 'Satarate(hsv)', longKey: 'sataratev', shortKey: 'sv' },
 			{ name: 'Light', longKey: 'light', shortKey: 'l' },
 			{ name: 'Bright', longKey: 'bright', shortKey: 'v' }
 		],
@@ -423,7 +424,7 @@ describe('Modify', function() {
 				it(item.name, function() {
 					var color = easycolor('#0ac3');
 					color[item.longKey] = desc.case[0][0];
-					color[item.shortKey].should.equal(desc.case[0][1], item.longKey + '和' + item.shortKey + '对应同一数据');
+					color[item.shortKey].should.equal(desc.case[0][1], desc.case[0] + ': ' + item.longKey + '和' + item.shortKey + '对应同一数据');
 					color.a.should.equal(0.2, 'Alpha不应被修改');
 					desc.case.forEach(function(cItem) {
 						var color2 = easycolor('#0ac3');
@@ -499,7 +500,7 @@ describe('Functions', function() {
 	it('grayed', function() {
 		var color = easycolor('orange');
 		var gray = color.grayed();
-		gray.s.should.equal(0);
+		gray.sl.should.equal(0);
 		gray.should.not.equal(color);
 	});
 	it('inverting', function() {
