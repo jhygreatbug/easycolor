@@ -1,5 +1,5 @@
 var chai = require('chai');
-var easycolor = require('../easycolor');
+var easycolor = require('../dist/easycolor');
 var should = chai.should();
 describe('Input', function() {
 	it('easycolor instance', function() {
@@ -274,13 +274,13 @@ describe('Input', function() {
 
 			easycolor('hsl(100,50%,50%)', { type: '' }).toString().should.equal('hsl(100,50%,50%)');
 		});
-		it('percentage', function() {
-			easycolor('rgb(51,51,51)').toString().should.equal('#333333');
-			easycolor('rgb(51,51,51)', { percentage: true }).toString().should.equal('#333333');
-			easycolor('rgb(51,51,51)', { type: 'rgb', percentage: true }).toString().should.equal('rgb(20%,20%,20%)');
-			easycolor('rgb(50%,100%,80%)', { type: 'rgb' }).toString().should.equal('rgb(50%,100%,80%)');
-			easycolor('rgb(50%,100%,80%)', { type: 'rgb', percentage: false }).toString().should.equal('rgb(128,255,204)');
-		});
+		// it('percentage', function() {
+		// 	easycolor('rgb(51,51,51)').toString().should.equal('#333333');
+		// 	easycolor('rgb(51,51,51)', { percentage: true }).toString().should.equal('#333333');
+		// 	easycolor('rgb(51,51,51)', { type: 'rgb', percentage: true }).toString().should.equal('rgb(20%,20%,20%)');
+		// 	easycolor('rgb(50%,100%,80%)', { type: 'rgb' }).toString().should.equal('rgb(50%,100%,80%)');
+		// 	easycolor('rgb(50%,100%,80%)', { type: 'rgb', percentage: false }).toString().should.equal('rgb(128,255,204)');
+		// });
 	});
 });
 
@@ -411,7 +411,8 @@ describe('Modify', function() {
 	}, {
 		describe: 'Satarate, light and bright',
 		it: [
-			{ name: 'Satarate', longKey: 'satarate', shortKey: 's' },
+			{ name: 'Satarate(hsl)', longKey: 'sataratel', shortKey: 'sl' },
+			{ name: 'Satarate(hsv)', longKey: 'sataratev', shortKey: 'sv' },
 			{ name: 'Light', longKey: 'light', shortKey: 'l' },
 			{ name: 'Bright', longKey: 'bright', shortKey: 'v' }
 		],
@@ -423,7 +424,7 @@ describe('Modify', function() {
 				it(item.name, function() {
 					var color = easycolor('#0ac3');
 					color[item.longKey] = desc.case[0][0];
-					color[item.shortKey].should.equal(desc.case[0][1], item.longKey + '和' + item.shortKey + '对应同一数据');
+					color[item.shortKey].should.equal(desc.case[0][1], desc.case[0] + ': ' + item.longKey + '和' + item.shortKey + '对应同一数据');
 					color.a.should.equal(0.2, 'Alpha不应被修改');
 					desc.case.forEach(function(cItem) {
 						var color2 = easycolor('#0ac3');
@@ -499,7 +500,7 @@ describe('Functions', function() {
 	it('grayed', function() {
 		var color = easycolor('orange');
 		var gray = color.grayed();
-		gray.s.should.equal(0);
+		gray.sl.should.equal(0);
 		gray.should.not.equal(color);
 	});
 	it('inverting', function() {
@@ -514,5 +515,7 @@ describe('Functions', function() {
 		color2.r = 100;
 		color1.toString().should.equal('red');
 		color2.toString().should.equal('#640000');
+		var color3 = easycolor('#0000')
+		color3.clone().toString().should.equal(color3.toString());
 	});
 });
