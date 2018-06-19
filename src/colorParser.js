@@ -1,6 +1,7 @@
 import { isMatch } from './CSSTokenReg';
 import { rgbToHue, rgbToHsl, rgbToHsv, hueToRgb, hslToRgb, hsvToRgb } from './colorModeConvert';
 import { keywords, hexKeywords } from './CSSKeywordColor';
+import { decimalPoint } from './const';
 
 export function colorParser (color, type) {
 	if (typeof color === 'string') {
@@ -17,12 +18,18 @@ export function colorParser (color, type) {
 var cp = colorParser;
 
 cp.rgbNumber = function (val) {
-	return Math.min(255, Math.max(0, Number(val)));
+	if (isMatch(val, 'number')) {
+	} else if (isMatch(val, 'percent')) {
+		val = cp.percent(val) / 100 * 255;
+	} else {
+		val = 0;
+	}
+	return inRange(val, 0, 255);
 };
 
 cp.percent = function (val) {
 	var num = typeof val === 'string' && val[val.length - 1] === '%' ? val.slice(0, -1) : val;
-	return Math.min(100, Math.max(0, Number(num)));
+	return inRange(num, 0, 100);
 }
 
 cp.hue = function (val) {
@@ -37,7 +44,8 @@ cp.hue = function (val) {
 			val = val.slice(0, -4) * 360;
 		}
 	}
-	return Number(val);
+	var val = Number(val);
+	return isNaN(val) ? 0 : val;
 };
 
 cp.hex = function (val) {
@@ -45,10 +53,15 @@ cp.hex = function (val) {
 };
 
 cp.alpha = function (val) {
-	if (val[val.length - 1] === '%') {
+	if (typeof val === 'string' && val[val.length - 1] === '%') {
 		val = cp.percent(val) / 100;
 	}
-	return Math.min(1, Math.max(0, Number(val)));
+	val = Number(val);
+	if (isNaN(val)) {
+		return 1;
+	} else {
+		return inRange(val, 0, 1);
+	}
 };
 
 cp.string = function (color) {
@@ -184,23 +197,15 @@ cp.object = vaildObject(function (color) {
 
 cp.object.rgb = vaildObject(function (color) {
 	var val;
-	if (isMatch(color.r, 'number') && isMatch(color.g, 'number') && isMatch(color.b, 'number')) {
-		val = {
-			r: cp.rgbNumber(color.r),
-			g: cp.rgbNumber(color.g),
-			b: cp.rgbNumber(color.b)
-		};
-	} else if (isMatch(color.r, 'percent') && isMatch(color.g, 'percent') && isMatch(color.b, 'percent')) {
-		val = {
-			r: cp.percent(color.r) / 100 * 255,
-			g: cp.percent(color.g) / 100 * 255,
-			b: cp.percent(color.b) / 100 * 255
-		};
-	}
+	val = {
+		r: cp.rgbNumber(color.r),
+		g: cp.rgbNumber(color.g),
+		b: cp.rgbNumber(color.b)
+	};
 	if (typeof val === 'undefined') {
 		return nullColor();
 	}
-	val.a = isMatch(color.a, 'unit') ? cp.alpha(color.a) : 1;
+	val.a = cp.alpha(color.a);
 	return {
 		type: 'rgb',
 		val: val
@@ -211,7 +216,7 @@ cp.object.hsl = vaildObject(function (color) {
 	var val;
 	if (isMatch(color.h, 'hue') && isMatch(color.s, 'unit') && isMatch(color.l, 'unit')) {
 		val = hslToRgb(cp.hue(color.h), cp.percent(color.s), cp.percent(color.l));
-		val.a = isMatch(color.a, 'unit') ? cp.alpha(color.a) : 1;
+		val.a = cp.alpha(color.a);
 		return {
 			type: 'hsl',
 			val: val
@@ -224,7 +229,7 @@ cp.object.hsv = vaildObject(function (color) {
 	var val;
 	if (isMatch(color.h, 'hue') && isMatch(color.s, 'unit') && isMatch(color.v, 'unit')) {
 		val = hsvToRgb(cp.hue(color.h), cp.percent(color.s), cp.percent(color.v));
-		val.a = isMatch(color.a, 'unit') ? cp.alpha(color.a) : 1;
+		val.a = cp.alpha(color.a);
 		return {
 			type: 'hsv',
 			val: val
@@ -232,6 +237,63 @@ cp.object.hsv = vaildObject(function (color) {
 	}
 	return nullColor();
 });
+
+cp.to = {};
+
+cp.to.rgbNumber = function (n) {
+	return Math.round(n);
+};
+
+cp.to.rgbpNumber = function (n) {
+	return toFixed(n * 100 / 255, decimalPoint);
+};
+
+cp.to.alpha = function (n) {
+	return toFixed(n, decimalPoint);
+};
+
+cp.to.hue = function (n) {
+	return toFixed(n, decimalPoint);
+};
+
+cp.to.percent = function (n) {
+	return toFixed(n, decimalPoint);
+};
+
+cp.to.rgb = function (r, g, b, a) {
+	return a === 1 ?
+	'rgb(' + cp.to.rgbNumber(r) + ',' + cp.to.rgbNumber(g) + ',' + cp.to.rgbNumber(b) + ')' :
+	'rgba(' + cp.to.rgbNumber(r) + ',' + cp.to.rgbNumber(g) + ',' + cp.to.rgbNumber(b) + ',' + cp.to.alpha(a) + ')';
+};
+
+cp.to.rgbp = function (r, g, b, a) {
+	return a === 1 ?
+		'rgb(' + cp.to.rgbpNumber(r, decimalPoint) + '%,' + cp.to.rgbpNumber(g, decimalPoint) + '%,' + cp.to.rgbpNumber(b, decimalPoint) + '%)' :
+		'rgba(' + cp.to.rgbpNumber(r, decimalPoint) + '%,' + cp.to.rgbpNumber(g, decimalPoint) + '%,' + cp.to.rgbpNumber(b, decimalPoint) + '%,' + cp.to.alpha(a) + ')';
+};
+
+cp.to.hsl = function (h, s, l, a) {
+	return a === 1 ?
+		'hsl(' + cp.to.hue(h) + ',' + cp.to.percent(s) + '%,' + cp.to.percent(l) + '%)' :
+		'hsla(' + cp.to.hue(h) + ',' + cp.to.percent(s) + '%,' + cp.to.percent(l) + '%,' + cp.to.alpha(a) + ')';
+};
+
+cp.to.hsv = function (h, s, v, a) {
+	return a === 1 ?
+		'hsv(' + cp.to.hue(h) + ',' + cp.to.percent(s) + '%,' + cp.to.percent(v) + '%)' :
+		'hsva(' + cp.to.hue(h) + ',' + cp.to.percent(s) + '%,' + cp.to.percent(v) + '%,' + cp.to.alpha(a) + ')';
+};
+
+cp.to.hex = function (r, g, b, a) {
+	return a === 1 ?
+		'#' + toHexString(r) + toHexString(g) + toHexString(b) :
+		'#' + toHexString(r) + toHexString(g) + toHexString(b) + toHexString(a * 255);
+};
+
+cp.to.keyword = function (r, g, b) {
+	var hex = toHexString(r) + toHexString(g) + toHexString(b);
+	return hex in hexKeywords ? hexKeywords[hex] : '';
+};
 
 function nullColor () {
 	return {
@@ -244,3 +306,18 @@ function isArray (o) {
 	return Object.prototype.toString.apply(o) === '[object Array]';
 }
 
+function inRange (val, l, r) {
+	var n = Number(val);
+	if (isNaN(n)) return l;
+	return Math.min(r, Math.max(l, n));
+}
+
+function toFixed (val, n) {
+	n = Number('1e' + n);
+	return Math.round(val * n) / n;
+}
+
+function toHexString (val) {
+	var s = Math.round(val).toString(16);
+	return s.length < 2 ? '0' + s : s;
+}

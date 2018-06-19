@@ -12,7 +12,8 @@
   },
   "scripts": {
     "test": "mocha",
-    "rollup": "rollup -c",
+    "dev": "rollup -c --environment myenv:dev",
+    "prod": "rollup -c --environment myenv:prod",
     "cover": "istanbul cover ./node_modules/mocha/bin/_mocha"
   },
   "repository": {

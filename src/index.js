@@ -1,42 +1,6 @@
-import { isMatch } from './CSSTokenReg';
 import { rgbToHue, rgbToHsl, rgbToHsv, hueToRgb, hslToRgb, hsvToRgb } from './colorModeConvert';
-import { decimalPoint, vaildType } from './const';
-import { colorParser } from './colorParser';
-import { keywords, hexKeywords } from './CSSKeywordColor';
-
-function simpleExtend (o1, o2) {
-	var key;
-	for (key in o2) {
-		if (!o2.hasOwnProperty(key)) return;
-		o1[key] = o2[key];
-	}
-}
-function isArray (o) {
-	return Object.prototype.toString.apply(o) === '[object Array]';
-}
-function addVector(v1, v2) {
-	return v1.map(function (item, index) {
-		return v1[index] + v2[index];
-	});
-}
-
-function subtractVector(v1, v2) {
-	return v1.map(function (item, index) {
-		return v1[index] - v2[index];
-	});
-}
-
-function multiplyVector(v1, num) {
-	return v1.map(function (item) {
-		return item * num;
-	});
-}
-
-function divisionVector(v1, num) {
-	return v1.map(function (item) {
-		return item / num;
-	});
-}
+import { vaildType } from './const';
+import { colorParser as cp } from './colorParser';
 
 function easycolor (color, options) {
 	if (color instanceof easycolor) {
@@ -52,7 +16,7 @@ function easycolor (color, options) {
 		opt.type = options.type;
 	}
 
-	var result = colorParser(color, opt.type);
+	var result = cp(color, opt.type);
 	if (result.type === 'rgb') {
 		result.type = 'hex';
 	}
@@ -135,16 +99,10 @@ easycolor.mixAlpha = function (a, b) {
 ].forEach(function (item) {
 	Object.defineProperty(easycolor.prototype, item.name, {
 		get: function () {
-			return Math.round(this._val[item.key]);
+			return cp.to.rgbNumber(this._val[item.key]);
 		},
 		set: function (val) {
-			if (isMatch(val, 'number')) {
-				this._val[item.key] = colorParser.rgbNumber(val);
-			} else if (isMatch(val, 'percent')) {
-				this._val[item.key] = colorParser.percent(val) / 100 * 255;
-			} else {
-				this._val[item.key] = 0;
-			}
+			this._val[item.key] = cp.rgbNumber(val);
 		},
 	});
 });
@@ -153,16 +111,12 @@ easycolor.mixAlpha = function (a, b) {
 	Object.defineProperty(easycolor.prototype, item, {
 		get: function () {
 			var val = this._val;
-			return toFixed(rgbToHue(val.r, val.g, val.b), decimalPoint);
+			return cp.to.hue(rgbToHue(val.r, val.g, val.b));
 		},
 		set: function (val) {
 			var old = this._val;
 			var hsl = rgbToHsl(old.r, old.g, old.b);
-			if (isMatch(val, 'hue')) {
-				hsl.h = colorParser.hue(val);
-			} else {
-				hsl.h = 0;
-			}
+			hsl.h = cp.hue(val);
 			this._val = hslToRgb(hsl.h, hsl.s, hsl.l);
 			this._val.a = old.a;
 		},
@@ -178,16 +132,12 @@ easycolor.mixAlpha = function (a, b) {
 	Object.defineProperty(easycolor.prototype, item.name, {
 		get: function () {
 			var val = this._val;
-			return toFixed(rgbToHsl(val.r, val.g, val.b)[item.key], decimalPoint);
+			return cp.to.percent(rgbToHsl(val.r, val.g, val.b)[item.key]);
 		},
 		set: function (val) {
 			var old = this._val;
 			var hsl = rgbToHsl(old.r, old.g, old.b);
-			if (isMatch(val, 'unit')) {
-				hsl[item.key] = colorParser.percent(val);
-			} else {
-				hsl[item.key] = 0;
-			}
+			hsl[item.key] = cp.percent(val);
 			this._val = hslToRgb(hsl.h, hsl.s, hsl.l);
 			this._val.a = old.a;
 		},
@@ -198,16 +148,12 @@ easycolor.mixAlpha = function (a, b) {
 	Object.defineProperty(easycolor.prototype, item, {
 		get: function () {
 			var val = this._val;
-			return toFixed(rgbToHsv(val.r, val.g, val.b).v, decimalPoint);
+			return cp.to.percent(rgbToHsv(val.r, val.g, val.b).v);
 		},
 		set: function (val) {
 			var old = this._val;
 			var hsv = rgbToHsv(old.r, old.g, old.b);
-			if (isMatch(val, 'unit')) {
-				hsv.v = colorParser.percent(val);
-			} else {
-				hsv.v = 0;
-			}
+			hsv.v = cp.percent(val);
 			this._val = hsvToRgb(hsv.h, hsv.s, hsv.v);
 			this._val.a = old.a;
 		},
@@ -217,16 +163,10 @@ easycolor.mixAlpha = function (a, b) {
 ['alpha', 'a'].forEach(function (item) {
 	Object.defineProperty(easycolor.prototype, item, {
 		get: function () {
-			return toFixed(this._val.a, decimalPoint);
+			return cp.to.alpha(this._val.a);
 		},
 		set: function (val) {
-			if (isMatch(val, 'number')) {
-				this._val.a = colorParser.rgbNumber(val);
-			} else if (isMatch(val, 'percent')) {
-				this._val.a = colorParser.percent(val) / 100;
-			} else {
-				this._val.a = 1;
-			}
+			this._val.a = cp.alpha(val);
 		},
 	});
 });
@@ -243,14 +183,13 @@ simpleExtend(easycolor.prototype, {
 			}
 		}
 		if (type === 'keyword') {
-			var hex = toHexString(val.r) + toHexString(val.g) + toHexString(val.b);
-			if (val.a !== 1 || !(hex in hexKeywords)) {
-				type = 'hex';
-			} else {
-				return hexKeywords[hex];
+			if (val.a === 1) {
+				var keyword = this.toKeyword();
+				if (keyword) return keyword;
 			}
+			type = 'hex';
 		}
-		if (oType !== 'hex' && type === 'hex' && val.a !== 1) {
+		if (type === 'hex' && oType !== 'hex' && val.a !== 1) {
 			type = 'rgb';
 		}
 		if (type === 'rgb') {
@@ -268,40 +207,29 @@ simpleExtend(easycolor.prototype, {
 	},
 	toRgbString: function () {
 		var val = this._val;
-		return val.a === 1 ?
-		'rgb(' + this.r + ',' + this.g + ',' + this.b + ')' :
-		'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a + ')';
+		return cp.to.rgb(val.r, val.g, val.b, val.a);
 	},
 	toRgbPercentString: function () {
 		var val = this._val;
-		return val.a === 1 ?
-			'rgb(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%)' :
-			'rgba(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%,' + this.a + ')';
+		return cp.to.rgbp(val.r, val.g, val.b, val.a);
 	},
 	toHslString: function () {
 		var val = this._val;
 		var hsl = rgbToHsl(val.r, val.g, val.b);
-		return val.a === 1 ?
-			'hsl(' + toFixed(hsl.h, decimalPoint) + ',' + toFixed(hsl.s, decimalPoint) + '%,' + toFixed(hsl.l, decimalPoint) + '%)' :
-			'hsla(' + toFixed(hsl.h, decimalPoint) + ',' + toFixed(hsl.s, decimalPoint) + '%,' + toFixed(hsl.l, decimalPoint) + '%,' + this.a + ')';
+		return cp.to.hsl(hsl.h, hsl.s, hsl.l, val.a);
 	},
 	toHsvString: function () {
 		var val = this._val;
 		var hsv = rgbToHsv(val.r, val.g, val.b);
-		return val.a === 1 ?
-			'hsv(' + toFixed(hsv.h, decimalPoint) + ',' + toFixed(hsv.s, decimalPoint) + '%,' + toFixed(hsv.v, decimalPoint) + '%)' :
-			'hsva(' + toFixed(hsv.h, decimalPoint) + ',' + toFixed(hsv.s, decimalPoint) + '%,' + toFixed(hsv.v, decimalPoint) + '%,' + this.a + ')';
+		return cp.to.hsv(hsv.h, hsv.s, hsv.v, val.a);
 	},
 	toHexString: function () {
 		var val = this._val;
-		return val.a === 1 ?
-			'#' + toHexString(val.r) + toHexString(val.g) + toHexString(val.b) :
-			'#' + toHexString(val.r) + toHexString(val.g) + toHexString(val.b) + toHexString(val.a * 255);
+		return cp.to.hex(val.r, val.g, val.b, val.a);
 	},
 	toKeyword: function () {
 		var val = this._val;
-		var hex = toHexString(val.r) + toHexString(val.g) + toHexString(val.b);
-		return hex in hexKeywords ? hexKeywords[hex] : '';
+		return cp.to.keyword(val.r, val.g, val.b);
 	},
 
 	getValue: function () {
@@ -337,22 +265,40 @@ simpleExtend(easycolor.prototype, {
 	},
 });
 
+function simpleExtend (o1, o2) {
+	var key;
+	for (key in o2) {
+		if (!o2.hasOwnProperty(key)) return;
+		o1[key] = o2[key];
+	}
+}
+
+function addVector(v1, v2) {
+	return v1.map(function (item, index) {
+		return v1[index] + v2[index];
+	});
+}
+
+function subtractVector(v1, v2) {
+	return v1.map(function (item, index) {
+		return v1[index] - v2[index];
+	});
+}
+
+function multiplyVector(v1, num) {
+	return v1.map(function (item) {
+		return item * num;
+	});
+}
+
+function divisionVector(v1, num) {
+	return v1.map(function (item) {
+		return item / num;
+	});
+}
+
 if (typeof module !== 'undefined' && module.exports) {
 	module.exports = easycolor;
 } else {
 	window.easycolor = easycolor;
-}
-
-function toHexString (val) {
-	var s = Math.round(val).toString(16);
-	return s.length < 2 ? '0' + s : s;
-}
-
-function toFixed (val, n) {
-	n = Number('1e' + n);
-	return Math.round(val * n) / n;
-}
-
-function rgbToPercent (val, n) {
-	return toFixed(val * 100 / 255, n);
 }

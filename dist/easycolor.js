@@ -1,53 +1,6 @@
 (function () {
 	'use strict';
 
-	var sourceToken = {
-		number: /(?:[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?)/,
-		percent: /(?:number%)/,
-		angle: /(?:number(?:deg|grad|rad|turn))/,
-		unit: /(?:number|percent)/,
-		hue: /(?:number|angle)/,
-		rgb: /rgba?\(\s*(number)[,\s]+(number)[,\s]+(number)(?:(?:[,\s]*\/[,\s]*|[,\s]+)(unit))?\s*\)/,
-		rgbp: /rgba?\(\s*(percent)[,\s]+(percent)[,\s]+(percent)(?:(?:[,\s]*\/[,\s]*|[,\s]+)(unit))?\s*\)/,
-		hsl: /hsla?\(\s*(hue)[,\s]+(percent)[,\s]+(percent)(?:(?:[,\s]*\/[,\s]*|[,\s]+)(unit))?\s*\)/,
-		hsv: /hs(?:v|b)a?\(\s*(hue)[,\s]+(percent)[,\s]+(percent)(?:(?:[,\s]*\/[,\s]*|[,\s]+)(unit))?\s*\)/,
-		hex: /#(?:[0-9a-f]{2}){3,4}/,
-		hexs: /#[0-9a-f]{3,4}/,
-	};
-	var cacheToken = {
-		number: sourceToken.number.source,
-	};
-	var token = {};
-
-	var replaceTokens = ['number', 'percent', 'angle', 'unit', 'hue'];
-
-	for (var key in sourceToken) {
-		token[key] = getReg(key);
-	}
-
-	function replaceReg (regStr, name) {
-		if (name in cacheToken) {
-			return regStr;
-		}
-		var result = regStr.replace(new RegExp(replaceTokens.join('|'), 'g'), function (match) {
-			if (match in cacheToken) {
-				return cacheToken[match];
-			}
-			return replaceReg(token[match].source, match);
-		});
-		cacheToken[name] = result;
-		return result;
-	}
-
-	function getReg (name) {
-		return new RegExp('^' + replaceReg(sourceToken[name].source, name) + '$', 'i');
-	}
-
-	function isMatch (val, name) {
-		if (typeof val === 'undefined' || val === null) return null;
-		return token[name].exec(val);
-	}
-
 	function rgbToHue(r, g, b) {
 		var max = Math.max(Math.max(r, g), b);
 		var min = Math.min(Math.min(r, g), b);
@@ -157,6 +110,53 @@
 		'hsl': true,
 		'hsv': true
 	};
+
+	var sourceToken = {
+		number: /(?:[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?)/,
+		percent: /(?:number%)/,
+		angle: /(?:number(?:deg|grad|rad|turn))/,
+		unit: /(?:number|percent)/,
+		hue: /(?:number|angle)/,
+		rgb: /rgba?\(\s*(number)[,\s]+(number)[,\s]+(number)(?:(?:[,\s]*\/[,\s]*|[,\s]+)(unit))?\s*\)/,
+		rgbp: /rgba?\(\s*(percent)[,\s]+(percent)[,\s]+(percent)(?:(?:[,\s]*\/[,\s]*|[,\s]+)(unit))?\s*\)/,
+		hsl: /hsla?\(\s*(hue)[,\s]+(percent)[,\s]+(percent)(?:(?:[,\s]*\/[,\s]*|[,\s]+)(unit))?\s*\)/,
+		hsv: /hs(?:v|b)a?\(\s*(hue)[,\s]+(percent)[,\s]+(percent)(?:(?:[,\s]*\/[,\s]*|[,\s]+)(unit))?\s*\)/,
+		hex: /#(?:[0-9a-f]{2}){3,4}/,
+		hexs: /#[0-9a-f]{3,4}/,
+	};
+	var cacheToken = {
+		number: sourceToken.number.source,
+	};
+	var token = {};
+
+	var replaceTokens = ['number', 'percent', 'angle', 'unit', 'hue'];
+
+	for (var key in sourceToken) {
+		token[key] = getReg(key);
+	}
+
+	function replaceReg (regStr, name) {
+		if (name in cacheToken) {
+			return regStr;
+		}
+		var result = regStr.replace(new RegExp(replaceTokens.join('|'), 'g'), function (match) {
+			if (match in cacheToken) {
+				return cacheToken[match];
+			}
+			return replaceReg(token[match].source, match);
+		});
+		cacheToken[name] = result;
+		return result;
+	}
+
+	function getReg (name) {
+		return new RegExp('^' + replaceReg(sourceToken[name].source, name) + '$', 'i');
+	}
+
+	function isMatch (val, name) {
+		if (typeof val === 'undefined' || val === null) return null;
+		return token[name].exec(val);
+	}
 
 	var keywords = {
 		black: '000000',
@@ -329,12 +329,17 @@
 	var cp = colorParser;
 
 	cp.rgbNumber = function (val) {
-		return Math.min(255, Math.max(0, Number(val)));
+		if (isMatch(val, 'number')) ; else if (isMatch(val, 'percent')) {
+			val = cp.percent(val) / 100 * 255;
+		} else {
+			val = 0;
+		}
+		return inRange(val, 0, 255);
 	};
 
 	cp.percent = function (val) {
 		var num = typeof val === 'string' && val[val.length - 1] === '%' ? val.slice(0, -1) : val;
-		return Math.min(100, Math.max(0, Number(num)));
+		return inRange(num, 0, 100);
 	};
 
 	cp.hue = function (val) {
@@ -349,7 +354,8 @@
 				val = val.slice(0, -4) * 360;
 			}
 		}
-		return Number(val);
+		var val = Number(val);
+		return isNaN(val) ? 0 : val;
 	};
 
 	cp.hex = function (val) {
@@ -357,10 +363,15 @@
 	};
 
 	cp.alpha = function (val) {
-		if (val[val.length - 1] === '%') {
+		if (typeof val === 'string' && val[val.length - 1] === '%') {
 			val = cp.percent(val) / 100;
 		}
-		return Math.min(1, Math.max(0, Number(val)));
+		val = Number(val);
+		if (isNaN(val)) {
+			return 1;
+		} else {
+			return inRange(val, 0, 1);
+		}
 	};
 
 	cp.string = function (color) {
@@ -496,23 +507,15 @@
 
 	cp.object.rgb = vaildObject(function (color) {
 		var val;
-		if (isMatch(color.r, 'number') && isMatch(color.g, 'number') && isMatch(color.b, 'number')) {
-			val = {
-				r: cp.rgbNumber(color.r),
-				g: cp.rgbNumber(color.g),
-				b: cp.rgbNumber(color.b)
-			};
-		} else if (isMatch(color.r, 'percent') && isMatch(color.g, 'percent') && isMatch(color.b, 'percent')) {
-			val = {
-				r: cp.percent(color.r) / 100 * 255,
-				g: cp.percent(color.g) / 100 * 255,
-				b: cp.percent(color.b) / 100 * 255
-			};
-		}
+		val = {
+			r: cp.rgbNumber(color.r),
+			g: cp.rgbNumber(color.g),
+			b: cp.rgbNumber(color.b)
+		};
 		if (typeof val === 'undefined') {
 			return nullColor();
 		}
-		val.a = isMatch(color.a, 'unit') ? cp.alpha(color.a) : 1;
+		val.a = cp.alpha(color.a);
 		return {
 			type: 'rgb',
 			val: val
@@ -523,7 +526,7 @@
 		var val;
 		if (isMatch(color.h, 'hue') && isMatch(color.s, 'unit') && isMatch(color.l, 'unit')) {
 			val = hslToRgb(cp.hue(color.h), cp.percent(color.s), cp.percent(color.l));
-			val.a = isMatch(color.a, 'unit') ? cp.alpha(color.a) : 1;
+			val.a = cp.alpha(color.a);
 			return {
 				type: 'hsl',
 				val: val
@@ -536,7 +539,7 @@
 		var val;
 		if (isMatch(color.h, 'hue') && isMatch(color.s, 'unit') && isMatch(color.v, 'unit')) {
 			val = hsvToRgb(cp.hue(color.h), cp.percent(color.s), cp.percent(color.v));
-			val.a = isMatch(color.a, 'unit') ? cp.alpha(color.a) : 1;
+			val.a = cp.alpha(color.a);
 			return {
 				type: 'hsv',
 				val: val
@@ -544,6 +547,63 @@
 		}
 		return nullColor();
 	});
+
+	cp.to = {};
+
+	cp.to.rgbNumber = function (n) {
+		return Math.round(n);
+	};
+
+	cp.to.rgbpNumber = function (n) {
+		return toFixed(n * 100 / 255, decimalPoint);
+	};
+
+	cp.to.alpha = function (n) {
+		return toFixed(n, decimalPoint);
+	};
+
+	cp.to.hue = function (n) {
+		return toFixed(n, decimalPoint);
+	};
+
+	cp.to.percent = function (n) {
+		return toFixed(n, decimalPoint);
+	};
+
+	cp.to.rgb = function (r, g, b, a) {
+		return a === 1 ?
+		'rgb(' + cp.to.rgbNumber(r) + ',' + cp.to.rgbNumber(g) + ',' + cp.to.rgbNumber(b) + ')' :
+		'rgba(' + cp.to.rgbNumber(r) + ',' + cp.to.rgbNumber(g) + ',' + cp.to.rgbNumber(b) + ',' + cp.to.alpha(a) + ')';
+	};
+
+	cp.to.rgbp = function (r, g, b, a) {
+		return a === 1 ?
+			'rgb(' + cp.to.rgbpNumber(r, decimalPoint) + '%,' + cp.to.rgbpNumber(g, decimalPoint) + '%,' + cp.to.rgbpNumber(b, decimalPoint) + '%)' :
+			'rgba(' + cp.to.rgbpNumber(r, decimalPoint) + '%,' + cp.to.rgbpNumber(g, decimalPoint) + '%,' + cp.to.rgbpNumber(b, decimalPoint) + '%,' + cp.to.alpha(a) + ')';
+	};
+
+	cp.to.hsl = function (h, s, l, a) {
+		return a === 1 ?
+			'hsl(' + cp.to.hue(h) + ',' + cp.to.percent(s) + '%,' + cp.to.percent(l) + '%)' :
+			'hsla(' + cp.to.hue(h) + ',' + cp.to.percent(s) + '%,' + cp.to.percent(l) + '%,' + cp.to.alpha(a) + ')';
+	};
+
+	cp.to.hsv = function (h, s, v, a) {
+		return a === 1 ?
+			'hsv(' + cp.to.hue(h) + ',' + cp.to.percent(s) + '%,' + cp.to.percent(v) + '%)' :
+			'hsva(' + cp.to.hue(h) + ',' + cp.to.percent(s) + '%,' + cp.to.percent(v) + '%,' + cp.to.alpha(a) + ')';
+	};
+
+	cp.to.hex = function (r, g, b, a) {
+		return a === 1 ?
+			'#' + toHexString(r) + toHexString(g) + toHexString(b) :
+			'#' + toHexString(r) + toHexString(g) + toHexString(b) + toHexString(a * 255);
+	};
+
+	cp.to.keyword = function (r, g, b) {
+		var hex = toHexString(r) + toHexString(g) + toHexString(b);
+		return hex in hexKeywords ? hexKeywords[hex] : '';
+	};
 
 	function nullColor () {
 		return {
@@ -556,35 +616,20 @@
 		return Object.prototype.toString.apply(o) === '[object Array]';
 	}
 
-	function simpleExtend (o1, o2) {
-		var key;
-		for (key in o2) {
-			if (!o2.hasOwnProperty(key)) return;
-			o1[key] = o2[key];
-		}
-	}
-	function addVector(v1, v2) {
-		return v1.map(function (item, index) {
-			return v1[index] + v2[index];
-		});
+	function inRange (val, l, r) {
+		var n = Number(val);
+		if (isNaN(n)) return l;
+		return Math.min(r, Math.max(l, n));
 	}
 
-	function subtractVector(v1, v2) {
-		return v1.map(function (item, index) {
-			return v1[index] - v2[index];
-		});
+	function toFixed (val, n) {
+		n = Number('1e' + n);
+		return Math.round(val * n) / n;
 	}
 
-	function multiplyVector(v1, num) {
-		return v1.map(function (item) {
-			return item * num;
-		});
-	}
-
-	function divisionVector(v1, num) {
-		return v1.map(function (item) {
-			return item / num;
-		});
+	function toHexString (val) {
+		var s = Math.round(val).toString(16);
+		return s.length < 2 ? '0' + s : s;
 	}
 
 	function easycolor (color, options) {
@@ -684,16 +729,10 @@
 	].forEach(function (item) {
 		Object.defineProperty(easycolor.prototype, item.name, {
 			get: function () {
-				return Math.round(this._val[item.key]);
+				return colorParser.to.rgbNumber(this._val[item.key]);
 			},
 			set: function (val) {
-				if (isMatch(val, 'number')) {
-					this._val[item.key] = colorParser.rgbNumber(val);
-				} else if (isMatch(val, 'percent')) {
-					this._val[item.key] = colorParser.percent(val) / 100 * 255;
-				} else {
-					this._val[item.key] = 0;
-				}
+				this._val[item.key] = colorParser.rgbNumber(val);
 			},
 		});
 	});
@@ -702,16 +741,12 @@
 		Object.defineProperty(easycolor.prototype, item, {
 			get: function () {
 				var val = this._val;
-				return toFixed(rgbToHue(val.r, val.g, val.b), decimalPoint);
+				return colorParser.to.hue(rgbToHue(val.r, val.g, val.b));
 			},
 			set: function (val) {
 				var old = this._val;
 				var hsl = rgbToHsl(old.r, old.g, old.b);
-				if (isMatch(val, 'hue')) {
-					hsl.h = colorParser.hue(val);
-				} else {
-					hsl.h = 0;
-				}
+				hsl.h = colorParser.hue(val);
 				this._val = hslToRgb(hsl.h, hsl.s, hsl.l);
 				this._val.a = old.a;
 			},
@@ -727,16 +762,12 @@
 		Object.defineProperty(easycolor.prototype, item.name, {
 			get: function () {
 				var val = this._val;
-				return toFixed(rgbToHsl(val.r, val.g, val.b)[item.key], decimalPoint);
+				return colorParser.to.percent(rgbToHsl(val.r, val.g, val.b)[item.key]);
 			},
 			set: function (val) {
 				var old = this._val;
 				var hsl = rgbToHsl(old.r, old.g, old.b);
-				if (isMatch(val, 'unit')) {
-					hsl[item.key] = colorParser.percent(val);
-				} else {
-					hsl[item.key] = 0;
-				}
+				hsl[item.key] = colorParser.percent(val);
 				this._val = hslToRgb(hsl.h, hsl.s, hsl.l);
 				this._val.a = old.a;
 			},
@@ -747,16 +778,12 @@
 		Object.defineProperty(easycolor.prototype, item, {
 			get: function () {
 				var val = this._val;
-				return toFixed(rgbToHsv(val.r, val.g, val.b).v, decimalPoint);
+				return colorParser.to.percent(rgbToHsv(val.r, val.g, val.b).v);
 			},
 			set: function (val) {
 				var old = this._val;
 				var hsv = rgbToHsv(old.r, old.g, old.b);
-				if (isMatch(val, 'unit')) {
-					hsv.v = colorParser.percent(val);
-				} else {
-					hsv.v = 0;
-				}
+				hsv.v = colorParser.percent(val);
 				this._val = hsvToRgb(hsv.h, hsv.s, hsv.v);
 				this._val.a = old.a;
 			},
@@ -766,16 +793,10 @@
 	['alpha', 'a'].forEach(function (item) {
 		Object.defineProperty(easycolor.prototype, item, {
 			get: function () {
-				return toFixed(this._val.a, decimalPoint);
+				return colorParser.to.alpha(this._val.a);
 			},
 			set: function (val) {
-				if (isMatch(val, 'number')) {
-					this._val.a = colorParser.rgbNumber(val);
-				} else if (isMatch(val, 'percent')) {
-					this._val.a = colorParser.percent(val) / 100;
-				} else {
-					this._val.a = 1;
-				}
+				this._val.a = colorParser.alpha(val);
 			},
 		});
 	});
@@ -792,14 +813,13 @@
 				}
 			}
 			if (type === 'keyword') {
-				var hex = toHexString(val.r) + toHexString(val.g) + toHexString(val.b);
-				if (val.a !== 1 || !(hex in hexKeywords)) {
-					type = 'hex';
-				} else {
-					return hexKeywords[hex];
+				if (val.a === 1) {
+					var keyword = this.toKeyword();
+					if (keyword) return keyword;
 				}
+				type = 'hex';
 			}
-			if (oType !== 'hex' && type === 'hex' && val.a !== 1) {
+			if (type === 'hex' && oType !== 'hex' && val.a !== 1) {
 				type = 'rgb';
 			}
 			if (type === 'rgb') {
@@ -817,40 +837,29 @@
 		},
 		toRgbString: function () {
 			var val = this._val;
-			return val.a === 1 ?
-			'rgb(' + this.r + ',' + this.g + ',' + this.b + ')' :
-			'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a + ')';
+			return colorParser.to.rgb(val.r, val.g, val.b, val.a);
 		},
 		toRgbPercentString: function () {
 			var val = this._val;
-			return val.a === 1 ?
-				'rgb(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%)' :
-				'rgba(' + rgbToPercent(val.r, decimalPoint) + '%,' + rgbToPercent(val.g, decimalPoint) + '%,' + rgbToPercent(val.b, decimalPoint) + '%,' + this.a + ')';
+			return colorParser.to.rgbp(val.r, val.g, val.b, val.a);
 		},
 		toHslString: function () {
 			var val = this._val;
 			var hsl = rgbToHsl(val.r, val.g, val.b);
-			return val.a === 1 ?
-				'hsl(' + toFixed(hsl.h, decimalPoint) + ',' + toFixed(hsl.s, decimalPoint) + '%,' + toFixed(hsl.l, decimalPoint) + '%)' :
-				'hsla(' + toFixed(hsl.h, decimalPoint) + ',' + toFixed(hsl.s, decimalPoint) + '%,' + toFixed(hsl.l, decimalPoint) + '%,' + this.a + ')';
+			return colorParser.to.hsl(hsl.h, hsl.s, hsl.l, val.a);
 		},
 		toHsvString: function () {
 			var val = this._val;
 			var hsv = rgbToHsv(val.r, val.g, val.b);
-			return val.a === 1 ?
-				'hsv(' + toFixed(hsv.h, decimalPoint) + ',' + toFixed(hsv.s, decimalPoint) + '%,' + toFixed(hsv.v, decimalPoint) + '%)' :
-				'hsva(' + toFixed(hsv.h, decimalPoint) + ',' + toFixed(hsv.s, decimalPoint) + '%,' + toFixed(hsv.v, decimalPoint) + '%,' + this.a + ')';
+			return colorParser.to.hsv(hsv.h, hsv.s, hsv.v, val.a);
 		},
 		toHexString: function () {
 			var val = this._val;
-			return val.a === 1 ?
-				'#' + toHexString(val.r) + toHexString(val.g) + toHexString(val.b) :
-				'#' + toHexString(val.r) + toHexString(val.g) + toHexString(val.b) + toHexString(val.a * 255);
+			return colorParser.to.hex(val.r, val.g, val.b, val.a);
 		},
 		toKeyword: function () {
 			var val = this._val;
-			var hex = toHexString(val.r) + toHexString(val.g) + toHexString(val.b);
-			return hex in hexKeywords ? hexKeywords[hex] : '';
+			return colorParser.to.keyword(val.r, val.g, val.b);
 		},
 
 		getValue: function () {
@@ -886,24 +895,42 @@
 		},
 	});
 
+	function simpleExtend (o1, o2) {
+		var key;
+		for (key in o2) {
+			if (!o2.hasOwnProperty(key)) return;
+			o1[key] = o2[key];
+		}
+	}
+
+	function addVector(v1, v2) {
+		return v1.map(function (item, index) {
+			return v1[index] + v2[index];
+		});
+	}
+
+	function subtractVector(v1, v2) {
+		return v1.map(function (item, index) {
+			return v1[index] - v2[index];
+		});
+	}
+
+	function multiplyVector(v1, num) {
+		return v1.map(function (item) {
+			return item * num;
+		});
+	}
+
+	function divisionVector(v1, num) {
+		return v1.map(function (item) {
+			return item / num;
+		});
+	}
+
 	if (typeof module !== 'undefined' && module.exports) {
 		module.exports = easycolor;
 	} else {
 		window.easycolor = easycolor;
-	}
-
-	function toHexString (val) {
-		var s = Math.round(val).toString(16);
-		return s.length < 2 ? '0' + s : s;
-	}
-
-	function toFixed (val, n) {
-		n = Number('1e' + n);
-		return Math.round(val * n) / n;
-	}
-
-	function rgbToPercent (val, n) {
-		return toFixed(val * 100 / 255, n);
 	}
 
 }());
